@@ -1,8 +1,7 @@
 import { Button, Input } from 'antd'
-import { EditOutlined, LockOutlined } from '@ant-design/icons'
+import { EditOutlined } from '@ant-design/icons'
 import React, { useEffect, useState } from 'react'
 import './EditableField.scss'
-import { Tooltip } from '../Tooltip'
 
 interface EditableFieldProps {
     name: string
@@ -23,7 +22,6 @@ export function EditableField({
     className,
     dataAttr,
     placeholder,
-    locked,
     multiline,
 }: EditableFieldProps): JSX.Element {
     const [isEditing, setIsEditing] = useState(false)
@@ -72,27 +70,18 @@ export function EditableField({
             ) : (
                 <div className="view-container">
                     <span className="field">{value || <i>{placeholder}</i>}</span>
-                    {!locked ? (
-                        <Button
-                            type="link"
-                            onClick={() => {
-                                setEditedValue(value)
-                                setIsEditing(true)
-                            }}
-                            className="btn-edit"
-                            data-attr={`edit-prop-${name}`}
-                            title={`Edit ${name}`}
-                        >
-                            <EditOutlined />
-                        </Button>
-                    ) : (
-                        <Tooltip
-                            title="This field is part of PostHog's team-oriented feature set and requires a premium plan. Check PostHog pricing."
-                            isDefaultTooltip
-                        >
-                            <LockOutlined style={{ marginLeft: 6, color: 'var(--text-muted)' }} />
-                        </Tooltip>
-                    )}
+                    <Button
+                        type="link"
+                        onClick={() => {
+                            setEditedValue(value)
+                            setIsEditing(true)
+                        }}
+                        className="btn-edit"
+                        data-attr={`edit-prop-${name}`}
+                        title={`Edit ${name}`}
+                    >
+                        <EditOutlined />
+                    </Button>
                 </div>
             )}
         </div>

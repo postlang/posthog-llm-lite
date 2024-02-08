@@ -134,7 +134,7 @@ CALCULATE_X_COHORTS_PARALLEL = get_from_env("CALCULATE_X_COHORTS_PARALLEL", 2, t
 
 # Instance configuration preferences
 # https://posthog.com/docs/self-host/configure/environment-variables
-SELF_CAPTURE = get_from_env("SELF_CAPTURE", DEBUG, type_cast=str_to_bool)
+SELF_CAPTURE = get_from_env("SELF_CAPTURE", False, type_cast=str_to_bool)
 debug_queries = get_from_env("DEBUG_QUERIES", False, type_cast=str_to_bool)
 disable_paid_fs = get_from_env("DISABLE_PAID_FEATURE_SHOWCASING", False, type_cast=str_to_bool)
 INSTANCE_PREFERENCES = {
@@ -468,7 +468,7 @@ elif os.getenv("POSTHOG_DB_NAME"):
             "PASSWORD": os.getenv("POSTHOG_DB_PASSWORD", ""),
             "HOST": os.getenv("POSTHOG_POSTGRES_HOST", "localhost"),
             "PORT": os.getenv("POSTHOG_POSTGRES_PORT", "5432"),
-            "CONN_MAX_AGE": 0,
+            "CONN_MAX_AGE": 30,
             "DISABLE_SERVER_SIDE_CURSORS": DISABLE_SERVER_SIDE_CURSORS,
             "SSL_OPTIONS": {
                 "sslmode": os.getenv("POSTHOG_POSTGRES_SSL_MODE", None),

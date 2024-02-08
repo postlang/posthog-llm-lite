@@ -32,9 +32,11 @@ export function loadPostHogJS(): void {
         // Make sure we have access to the object in window for debugging
         window.posthog = posthog
     } else {
+        const api_host = 'http://localhost:8000'
         posthog.init(
             'fake token',
             configWithSentry({
+                api_host: api_host,
                 autocapture: false,
                 loaded: function (ph) {
                     ph.opt_out_capturing()
@@ -43,12 +45,12 @@ export function loadPostHogJS(): void {
         )
     }
 
-    if ((window as any).SENTRY_DSN) {
-        Sentry.init({
-            dsn: (window as any).SENTRY_DSN,
-            ...(window.location.host.indexOf('app.posthog.com') > -1 && {
-                integrations: [new posthog.SentryIntegration(posthog, 'posthog', 1899813)],
-            }),
-        })
-    }
+    // if ((window as any).SENTRY_DSN) {
+    //    Sentry.init({
+    //        dsn: (window as any).SENTRY_DSN,
+    //        ...(window.location.host.indexOf('app.posthog.com') > -1 && {
+    //            integrations: [new posthog.SentryIntegration(posthog, 'posthog', 1899813)],
+    //        }),
+    //    })
+    // }
 }

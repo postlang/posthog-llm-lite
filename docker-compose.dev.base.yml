@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+    db:
+        image: postgres:12-alpine
+        container_name: posthog_db
+        environment:
+            POSTGRES_USER: posthog
+            POSTGRES_DB: posthog
+            POSTGRES_PASSWORD: posthog
+        ports:
+            - '5432:5432'
+    redis:
+        image: 'redis:5-alpine'
+        container_name: posthog_redis
+        ports:
+            - '6379:6379'
+    pluginserver: &pluginserver
+        build:
+            context: .
+            dockerfile: dev.Dockerfile
+        command: ./bin/plugin-server
+        volumes:
+            - .:/code
+        environment:
+            DATABASE_URL: 'postgres://posthog:posthog@db:5432/posthog'
+            REDIS_URL: 'redis://redis:6379/'
+            SECRET_KEY: '<randomly generated secret key>'
+            DEBUG: 'true'
+            PGHOST: db
+            PGUSER: posthog
+            PGPASSWORD: posthog
+        depends_on:
+            - db
+            - redis
+        links:
+            - db:db
+            - redis:redis
+    frontend:
+        <<: *pluginserver
+        command: ./bin/docker-frontend
+        ports:
+            - '8234:8234'
+

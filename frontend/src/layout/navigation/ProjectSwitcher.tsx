@@ -5,17 +5,15 @@ import { LemonButton, LemonButtonWithSideAction } from 'lib/components/LemonButt
 import { LemonRow, LemonSpacer } from 'lib/components/LemonRow'
 import React from 'react'
 import { organizationLogic } from 'scenes/organizationLogic'
-import { sceneLogic } from 'scenes/sceneLogic'
 import { teamLogic } from 'scenes/teamLogic'
 import { urls } from 'scenes/urls'
 import { userLogic } from 'scenes/userLogic'
-import { AvailableFeature, TeamBasicType } from '~/types'
+import { TeamBasicType } from '~/types'
 import { navigationLogic } from './navigationLogic'
 
 export function ProjectSwitcherOverlay(): JSX.Element {
     const { currentOrganization, isProjectCreationForbidden } = useValues(organizationLogic)
     const { currentTeam } = useValues(teamLogic)
-    const { guardAvailableFeature } = useActions(sceneLogic)
     const { showCreateProjectModal, hideProjectSwitcher } = useActions(navigationLogic)
 
     return (
@@ -40,12 +38,7 @@ export function ProjectSwitcherOverlay(): JSX.Element {
                 }
                 onClick={() => {
                     hideProjectSwitcher()
-                    guardAvailableFeature(
-                        AvailableFeature.ORGANIZATIONS_PROJECTS,
-                        'multiple projects',
-                        'Projects allow you to separate data and configuration for different products or environments.',
-                        showCreateProjectModal
-                    )
+                    showCreateProjectModal()
                 }}
             >
                 New project

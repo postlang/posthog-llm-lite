@@ -18,18 +18,16 @@ import { Popup } from '../../../lib/components/Popup/Popup'
 import { Link } from '../../../lib/components/Link'
 import { urls } from '../../../scenes/urls'
 import { navigationLogic } from '../navigationLogic'
-import { LicenseType, OrganizationBasicType } from '../../../types'
+import { OrganizationBasicType } from '../../../types'
 import { organizationLogic } from '../../../scenes/organizationLogic'
 import { preflightLogic } from '../../../scenes/PreflightCheck/logic'
 import { licenseLogic } from '../../../scenes/instance/Licenses/logic'
-import { identifierToHuman } from '../../../lib/utils'
 import { Lettermark } from '../../../lib/components/Lettermark/Lettermark'
 import {
     AccessLevelIndicator,
     NewOrganizationButton,
     OtherOrganizationButton,
 } from '~/layout/navigation/OrganizationSwitcher'
-import { dayjs } from 'lib/dayjs'
 
 function SitePopoverSection({ title, children }: { title?: string; children: any }): JSX.Element {
     return (
@@ -103,36 +101,6 @@ function InviteMembersButton(): JSX.Element {
         >
             Invite members
         </LemonButton>
-    )
-}
-
-function License(): JSX.Element {
-    const { closeSitePopover } = useActions(navigationLogic)
-    const { licenses } = useValues(licenseLogic)
-
-    const relevantLicense = licenses[0] as LicenseType | undefined
-
-    return (
-        <LemonRow icon={<Lettermark name={relevantLicense ? relevantLicense.plan : '–'} />} fullWidth>
-            <>
-                <div className="SitePopover__main-info">
-                    <div>{relevantLicense ? `${identifierToHuman(relevantLicense.plan)} plan` : 'Free plan'}</div>
-                    {relevantLicense && (
-                        <div className="supplement">
-                            Valid until {dayjs(relevantLicense.valid_until).format('D MMM YYYY')}
-                        </div>
-                    )}
-                </div>
-                <Link
-                    to={urls.instanceLicenses()}
-                    onClick={closeSitePopover}
-                    className="SitePopover__side-link"
-                    data-attr="top-menu-item-licenses"
-                >
-                    Manage license
-                </Link>
-            </>
-        </LemonRow>
     )
 }
 
@@ -253,7 +221,6 @@ export function SitePopover(): JSX.Element {
                     )}
                     {(!preflight?.cloud || user?.is_staff) && (
                         <SitePopoverSection title="PostHog status">
-                            {!preflight?.cloud && <License />}
                             <SystemStatus />
                             {!preflight?.cloud && <Version />}
                         </SitePopoverSection>

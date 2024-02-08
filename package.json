@@ -1,19 +1,19 @@
 {
-    "name": "posthog",
+    "name": "postlang",
     "description": "",
     "version": "0.0.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/posthog/posthog.git"
+        "url": "https://github.com/postlang/postlang.git"
     },
-    "author": "PostHog Inc.",
+    "author": "PostHog, Postlang",
     "bugs": {
-        "url": "https://github.com/posthog/posthog/issues"
+        "url": "https://github.com/postlang/postlang/issues"
     },
-    "homepage": "https://github.com/posthog/posthog#readme",
+    "homepage": "https://github.com/postlang/postlang",
     "license": "MIT",
     "engines": {
-        "node": ">=14 <17"
+        "node": ">=14 <19"
     },
     "scripts": {
         "copy-scripts": "mkdir -p frontend/dist/ && yarn copy-scripts:array && yarn copy-scripts:recorder",

@@ -1,6 +1,5 @@
 import dayjs from 'dayjs'
 import { kea } from 'kea'
-import api from 'lib/api'
 import { eventUsageLogic } from 'lib/utils/eventUsageLogic'
 import { systemStatusLogic } from 'scenes/instance/SystemStatus/systemStatusLogic'
 import { organizationLogic } from 'scenes/organizationLogic'
@@ -8,7 +7,6 @@ import { preflightLogic } from 'scenes/PreflightCheck/logic'
 import { sceneLogic } from 'scenes/sceneLogic'
 import { teamLogic } from 'scenes/teamLogic'
 import { userLogic } from 'scenes/userLogic'
-import { VersionType } from '~/types'
 import { navigationLogicType } from './navigationLogicType'
 
 type WarningType =
@@ -198,22 +196,6 @@ export const navigationLogic = kea<navigationLogicType<WarningType>>({
             null as string | null,
             {
                 loadLatestVersion: async () => {
-                    const versions = (await api.get('https://update.posthog.com')) as VersionType[]
-                    for (const version of versions) {
-                        if (
-                            version?.release_date &&
-                            dayjs
-                                .utc(version.release_date)
-                                .set('hour', 0)
-                                .set('minute', 0)
-                                .set('second', 0)
-                                .set('millisecond', 0) > dayjs()
-                        ) {
-                            // Release date is in the future
-                            continue
-                        }
-                        return version.version
-                    }
                     return null
                 },
             },
@@ -228,9 +210,9 @@ export const navigationLogic = kea<navigationLogicType<WarningType>>({
             }
         },
     }),
-    events: ({ actions }) => ({
+    events: () => ({
         afterMount: () => {
-            actions.loadLatestVersion()
+            // actions.loadLatestVersion()
         },
     }),
 })

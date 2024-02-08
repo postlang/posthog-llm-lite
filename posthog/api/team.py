@@ -6,7 +6,6 @@ from rest_framework import exceptions, permissions, request, response, serialize
 from rest_framework.decorators import action
 
 from posthog.api.shared import TeamBasicSerializer
-from posthog.constants import AvailableFeature
 from posthog.mixins import AnalyticsDestroyModelMixin
 from posthog.models import Organization, Team
 from posthog.models.group_type_mapping import GroupTypeMapping
@@ -14,30 +13,11 @@ from posthog.models.organization import OrganizationMembership
 from posthog.models.user import User
 from posthog.models.utils import generate_random_token_project
 from posthog.permissions import (
-    CREATE_METHODS,
     OrganizationAdminAnyPermissions,
     OrganizationAdminWritePermissions,
     ProjectMembershipNecessaryPermissions,
     TeamMemberLightManagementPermission,
 )
-
-
-class PremiumMultiprojectPermissions(permissions.BasePermission):
-    """Require user to have all necessary premium features on their plan for create access to the endpoint."""
-
-    message = "You must upgrade your PostHog plan to be able to create and manage multiple projects."
-
-    def has_permission(self, request: request.Request, view) -> bool:
-        user = cast(User, request.user)
-        if request.method in CREATE_METHODS and (
-            (user.organization is None)
-            or (
-                user.organization.teams.exclude(is_demo=True).count() >= 1
-                and not user.organization.is_feature_available(AvailableFeature.ORGANIZATIONS_PROJECTS)
-            )
-        ):
-            return False
-        return True
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -123,7 +103,6 @@ class TeamViewSet(AnalyticsDestroyModelMixin, viewsets.ModelViewSet):
     permission_classes = [
         permissions.IsAuthenticated,
         ProjectMembershipNecessaryPermissions,
-        PremiumMultiprojectPermissions,
     ]
     lookup_field = "id"
     ordering = "-created_by"

@@ -8,9 +8,8 @@ import { membershipLevelToName } from 'lib/utils/permissioning'
 import React from 'react'
 import { organizationLogic } from 'scenes/organizationLogic'
 import { preflightLogic } from 'scenes/PreflightCheck/logic'
-import { sceneLogic } from 'scenes/sceneLogic'
 import { userLogic } from 'scenes/userLogic'
-import { AvailableFeature, OrganizationBasicType } from '~/types'
+import { OrganizationBasicType } from '~/types'
 import { navigationLogic } from './navigationLogic'
 
 export function AccessLevelIndicator({ organization }: { organization: OrganizationBasicType }): JSX.Element {
@@ -40,29 +39,10 @@ export function OtherOrganizationButton({ organization }: { organization: Organi
 }
 
 export function NewOrganizationButton(): JSX.Element {
-    const { closeSitePopover, showCreateOrganizationModal } = useActions(navigationLogic)
-    const { guardAvailableFeature } = useActions(sceneLogic)
+    const { showCreateOrganizationModal } = useActions(navigationLogic)
 
     return (
-        <LemonButton
-            icon={<IconPlus />}
-            onClick={() =>
-                guardAvailableFeature(
-                    AvailableFeature.ORGANIZATIONS_PROJECTS,
-                    'multiple organizations',
-                    'Organizations group people building products together. An organization can then have multiple projects.',
-                    () => {
-                        closeSitePopover()
-                        showCreateOrganizationModal()
-                    },
-                    {
-                        cloud: false,
-                        selfHosted: true,
-                    }
-                )
-            }
-            fullWidth
-        >
+        <LemonButton icon={<IconPlus />} onClick={() => showCreateOrganizationModal()} fullWidth>
             New organization
         </LemonButton>
     )

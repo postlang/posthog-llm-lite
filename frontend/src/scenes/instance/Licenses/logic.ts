@@ -50,7 +50,7 @@ export const licenseLogic = kea<licenseLogicType>({
     },
     events: ({ actions }) => ({
         afterMount: () => {
-            actions.loadLicenses()
+            // actions.loadLicenses()
         },
     }),
 })

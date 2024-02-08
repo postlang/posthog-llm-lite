@@ -53,7 +53,6 @@ export const urls = {
     organizationBilling: () => '/organization/billing',
     billingSubscribed: () => '/organization/billing/subscribed',
     // Self-hosted only
-    instanceLicenses: () => '/instance/licenses',
     systemStatus: () => '/instance/status',
     systemStatusPage: (page: string) => `/instance/status/${page}`,
     asyncMigrations: () => '/instance/async_migrations',

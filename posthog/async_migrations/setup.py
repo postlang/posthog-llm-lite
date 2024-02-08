@@ -1,7 +1,6 @@
 from typing import Dict, Optional
 
 from django.core.exceptions import ImproperlyConfigured
-from infi.clickhouse_orm.utils import import_submodules
 from semantic_version.base import Version
 
 from posthog.async_migrations.definition import AsyncMigrationDefinition
@@ -24,6 +23,7 @@ ASYNC_MIGRATIONS_MODULE_PATH = "posthog.async_migrations.migrations"
 ASYNC_MIGRATIONS_EXAMPLE_MODULE_PATH = "posthog.async_migrations.examples"
 
 if is_clickhouse_enabled():
+    from infi.clickhouse_orm.utils import import_submodules
     all_migrations = import_submodules(ASYNC_MIGRATIONS_MODULE_PATH)
 
     for name, module in all_migrations.items():

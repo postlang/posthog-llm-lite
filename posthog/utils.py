@@ -237,8 +237,8 @@ def render_template(template_name: str, request: HttpRequest, context: Dict = {}
             context["js_posthog_api_key"] = f"'{api_token}'"
             context["js_posthog_host"] = "window.location.origin"
     else:
-        context["js_posthog_api_key"] = "'sTMFPsFhdP1Ssg'"
-        context["js_posthog_host"] = "'https://app.posthog.com'"
+        context["js_posthog_api_key"] = ""
+        context["js_posthog_host"] = ""
 
     context["js_capture_internal_metrics"] = settings.CAPTURE_INTERNAL_METRICS
     context["js_url"] = settings.JS_URL
@@ -613,35 +613,8 @@ def get_instance_realm() -> str:
 
 def get_can_create_org() -> bool:
     """Returns whether a new organization can be created in the current instance.
-
-    Organizations can be created only in the following cases:
-    - if on PostHog Cloud
-    - if running end-to-end tests
-    - if there's no organization yet
-    - if an appropriate license is active and MULTI_ORG_ENABLED is True
     """
-    from posthog.models.organization import Organization
-
-    if (
-        settings.MULTI_TENANCY
-        or settings.E2E_TESTING
-        or not Organization.objects.filter(for_internal_metrics=False).exists()
-    ):
-        return True
-
-    if settings.MULTI_ORG_ENABLED:
-        try:
-            from ee.models.license import License
-        except ImportError:
-            pass
-        else:
-            license = License.objects.first_valid()
-            if license is not None and AvailableFeature.ZAPIER in license.available_features:
-                return True
-            else:
-                print_warning(["You have configured MULTI_ORG_ENABLED, but not the required premium PostHog plan!"])
-
-    return False
+    return True
 
 
 def get_available_social_auth_providers() -> Dict[str, bool]:

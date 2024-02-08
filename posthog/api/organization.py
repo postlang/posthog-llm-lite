@@ -8,37 +8,14 @@ from rest_framework.request import Request
 
 from posthog.api.routing import StructuredViewSetMixin
 from posthog.api.shared import TeamBasicSerializer
-from posthog.constants import AvailableFeature
 from posthog.event_usage import report_onboarding_completed, report_organization_deleted
 from posthog.models import Organization, User
 from posthog.models.organization import OrganizationMembership
 from posthog.permissions import (
-    CREATE_METHODS,
     OrganizationAdminWritePermissions,
     OrganizationMemberPermissions,
     extract_organization,
 )
-
-
-class PremiumMultiorganizationPermissions(permissions.BasePermission):
-    """Require user to have all necessary premium features on their plan for create access to the endpoint."""
-
-    message = "You must upgrade your PostHog plan to be able to create and manage multiple organizations."
-
-    def has_permission(self, request: Request, view) -> bool:
-        user = cast(User, request.user)
-        if (
-            # make multiple orgs only premium on self-hosted, since enforcement of this is not possible on Cloud
-            not getattr(settings, "MULTI_TENANCY", False)
-            and request.method in CREATE_METHODS
-            and (
-                user.organization is None
-                or not user.organization.is_feature_available(AvailableFeature.ORGANIZATIONS_PROJECTS)
-            )
-            and user.organizations.count() >= 1
-        ):
-            return False
-        return True
 
 
 class OrganizationPermissionsWithDelete(OrganizationAdminWritePermissions):
@@ -154,7 +131,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         if self.request.method == "POST":
             # Cannot use `OrganizationMemberPermissions` or `OrganizationAdminWritePermissions`
             # because they require an existing org, unneded anyways because permissions are organization-based
-            return [permission() for permission in [permissions.IsAuthenticated, PremiumMultiorganizationPermissions]]
+            return [permission() for permission in [permissions.IsAuthenticated]]
         return super().get_permissions()
 
     def get_queryset(self) -> QuerySet:

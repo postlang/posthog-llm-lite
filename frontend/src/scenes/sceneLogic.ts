@@ -218,13 +218,6 @@ export const sceneLogic = kea<sceneLogicType>({
         openScene: ({ scene, params, method }) => {
             const sceneConfig = sceneConfigurations[scene] || {}
             const { user } = userLogic.values
-            const { preflight } = preflightLogic.values
-
-            if (scene === Scene.Signup && preflight && !preflight.can_create_org) {
-                // If user is on an already initiated self-hosted instance, redirect away from signup
-                router.actions.replace(urls.login())
-                return
-            }
 
             if (user) {
                 // If user is already logged in, redirect away from unauthenticated-only routes (e.g. /signup)
