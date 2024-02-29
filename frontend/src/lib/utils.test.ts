@@ -264,9 +264,8 @@ describe('dateFilterToText()', () => {
         })
 
         it('can have overridden date format', () => {
-            const from = dayjs('2018-04-04T16:00:00.000Z')
-            const to = dayjs('2018-04-09T15:05:00.000Z')
-
+            const from = dayjs('2018-04-04T16:00:00.000Z').utc()
+            const to = dayjs('2018-04-09T15:05:00.000Z').utc()
             expect(dateFilterToText(from, to, 'custom', dateMapping, true, 'YYYY-MM-DD hh:mm:ss')).toEqual(
                 '2018-04-04 04:00:00 - 2018-04-09 03:05:00'
             )

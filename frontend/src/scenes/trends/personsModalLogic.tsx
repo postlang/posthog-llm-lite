@@ -295,7 +295,6 @@ export const personsModalLogic = kea<personsModalLogicType<LoadPeopleFromUrlProp
                     funnelStep,
                     pathsDropoff,
                 } as TrendActors
-
                 eventUsageLogic.actions.reportPersonsModalViewed(peopleParams, peopleResult.count, !!actors?.next)
 
                 if (saveOriginal) {

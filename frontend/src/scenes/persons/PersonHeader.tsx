@@ -46,7 +46,7 @@ export function PersonHeader(props: PersonHeaderProps): JSX.Element {
                     size="md"
                 />
             )}
-            <span className="ph-no-capture text-ellipsis">{asDisplay(props.person)}</span>
+            <span className="ph-no-capture">{asDisplay(props.person)}</span>
         </div>
     )
 

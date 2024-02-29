@@ -256,8 +256,16 @@ code.code {
     margin-right: $default_spacing * 0.25;
 }
 
+.ml-075 {
+    margin-left: $default_spacing * 0.75;
+}
+
 .ml-05 {
     margin-left: $default_spacing * 0.5;
+}
+
+.mr-075 {
+    margin-right: $default_spacing * 0.75;
 }
 
 .ml-025 {
@@ -295,6 +303,10 @@ code.code {
     padding-left: $default_spacing;
 }
 
+.p-2 {
+    padding: 0.5rem;
+}
+
 .full-width {
     width: 100%;
 }
@@ -315,6 +327,14 @@ code.code {
 .flex-center {
     display: flex;
     align-items: center;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    flex-direction: row;
 }
 
 // Color styles
@@ -807,4 +827,44 @@ body {
             display: block;
         }
     }
+}
+
+// Dialogs
+
+.PersonsModal__tabs ul {
+    padding: 0px 1rem;
+}
+
+.bg-border-light {
+    background-color: #ebebeb;
+}
+
+.rounded-lg {
+    border-radius: 10px;
+}
+
+.z-ui-markdown p {
+    margin: 0;
+    padding: 0;
+    text-align: justify;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.col-gap-05 {
+    gap: 0.5rem;
+}
+
+.full-border-light {
+    border: 1px solid var(--border-dark);
+}
+
+.border-bottom-light {
+    border-bottom: 1px solid var(--border-dark);
+}
+
+.border-top-light {
+    border-top: 1px solid var(--border-dark);
 }
