@@ -10,7 +10,6 @@ from posthog.models.plugin import PluginConfig
 from posthog.models.utils import UUIDT
 from posthog.tasks.status_report import status_report
 from posthog.test.base import APIBaseTest
-from posthog.utils import is_clickhouse_enabled
 from posthog.version import VERSION
 
 
@@ -31,8 +30,8 @@ def factory_status_report(_create_event: Callable, _create_person: Callable) -> 
 
             self.assertEqual(report["posthog_version"], VERSION)
             self.assertEqual(report["deployment"], "tests")
-            self.assertLess(report["table_sizes"]["posthog_event"], 10 ** 7)  # <10MB
-            self.assertLess(report["table_sizes"]["posthog_sessionrecordingevent"], 10 ** 7)  # <10MB
+            self.assertLess(report["table_sizes"]["posthog_event"], 10**7)  # <10MB
+            self.assertLess(report["table_sizes"]["posthog_sessionrecordingevent"], 10**7)  # <10MB
 
         def test_instance_status_report_event_counts(self) -> None:
             with freeze_time("2020-11-02"):
@@ -102,7 +101,8 @@ def factory_status_report(_create_event: Callable, _create_person: Callable) -> 
 
                 # Check event totals are updated
                 self.assertEqual(
-                    updated_team_report["events_count_total"], team_report["events_count_total"] + 2,
+                    updated_team_report["events_count_total"],
+                    team_report["events_count_total"] + 2,
                 )
                 self.assertEqual(
                     updated_instance_usage_summary["events_count_total"],  # type: ignore

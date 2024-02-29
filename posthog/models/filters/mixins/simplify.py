@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, TypeVar, cast
 
 from posthog.models.property import GroupTypeIndex
-from posthog.utils import is_clickhouse_enabled
 
 if TYPE_CHECKING:  # Avoid circular import
     from posthog.models import Property, Team
@@ -28,7 +27,10 @@ class SimplifyFilterMixin:
         result: Any = self.with_data({"is_simplified": True})  # type: ignore
         if getattr(result, "filter_test_accounts", False):
             result = result.with_data(
-                {"properties": result.properties + team.test_account_filters, "filter_test_accounts": False,}
+                {
+                    "properties": result.properties + team.test_account_filters,
+                    "filter_test_accounts": False,
+                }
             )
 
         updated_entities = {}
@@ -40,7 +42,12 @@ class SimplifyFilterMixin:
         if getattr(result, "aggregation_group_type_index", None) is not None:
             properties.append(self._group_set_property(cast(int, result.aggregation_group_type_index)))  # type: ignore
 
-        return result.with_data({**updated_entities, "properties": properties,})
+        return result.with_data(
+            {
+                **updated_entities,
+                "properties": properties,
+            }
+        )
 
     def _simplify_entity(
         self, team: "Team", entity_type: Literal["events", "actions", "exclusions"], entity_params: Dict, **kwargs
@@ -62,27 +69,17 @@ class SimplifyFilterMixin:
             simplified_properties.extend(self._simplify_property(team, prop, **kwargs))
         return simplified_properties
 
-    def _simplify_property(
-        self, team: "Team", property: "Property", is_clickhouse_enabled=is_clickhouse_enabled()
-    ) -> List["Property"]:
-        if property.type == "cohort" and is_clickhouse_enabled:
-            from ee.clickhouse.models.cohort import simplified_cohort_filter_properties
-            from posthog.models import Cohort
-
-            try:
-                cohort = Cohort.objects.get(pk=property.value, team_id=team.pk)
-            except Cohort.DoesNotExist:
-                # :TODO: Handle non-existing resource in-query instead
-                return [property]
-
-            return simplified_cohort_filter_properties(cohort, team)
-
+    def _simplify_property(self, team: "Team", property: "Property", is_clickhouse_enabled=False) -> List["Property"]:
         return [property]
 
     def _group_set_property(self, group_type_index: GroupTypeIndex) -> "Property":
         from posthog.models.property import Property
 
-        return Property(key=f"$group_{group_type_index}", value="", operator="is_not",)
+        return Property(
+            key=f"$group_{group_type_index}",
+            value="",
+            operator="is_not",
+        )
 
     @property
     def is_simplified(self) -> bool:

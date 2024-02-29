@@ -7,7 +7,7 @@ from posthog.demo.revenue_data_generator import RevenueDataGenerator
 from posthog.demo.web_data_generator import WebDataGenerator
 from posthog.models import Organization, Team, User
 from posthog.models.event_definition import EventDefinition
-from posthog.utils import is_clickhouse_enabled, render_template
+from posthog.utils import render_template
 
 ORGANIZATION_NAME = "HogFlix"
 TEAM_NAME = "HogFlix Demo App"
@@ -28,13 +28,6 @@ def demo(request: Request):
     user.current_team = team
     user.save()
     EventDefinition.objects.get_or_create(team=team, name="$pageview")
-
-    if is_clickhouse_enabled():  # :TRICKY: Lazily backfill missing event data.
-        from ee.clickhouse.models.event import get_events_by_team
-
-        result = get_events_by_team(team_id=team.pk)
-        if not result:
-            create_demo_data(team, dashboards=False)
 
     return render_template("demo.html", request=request, context={"api_token": team.api_token})
 

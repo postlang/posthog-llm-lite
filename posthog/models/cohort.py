@@ -11,7 +11,6 @@ from django.utils import timezone
 from sentry_sdk import capture_exception
 
 from posthog.models.utils import sane_repr
-from posthog.utils import is_clickhouse_enabled
 
 from .action import Action
 from .event import Event
@@ -103,16 +102,13 @@ class Cohort(models.Model):
             "deleted": self.deleted,
         }
 
-    def calculate_people(self, use_clickhouse=is_clickhouse_enabled()):
+    def calculate_people(self):
         if self.is_static:
             return
         try:
-            if not use_clickhouse:
-                self.is_calculating = True
-                self.save()
-                persons_query = self._postgres_persons_query()
-            else:
-                persons_query = self._clickhouse_persons_query()
+            self.is_calculating = True
+            self.save()
+            persons_query = self._postgres_persons_query()
 
             try:
                 sql, params = persons_query.distinct("pk").only("pk").query.sql_with_params()
@@ -125,40 +121,24 @@ class Cohort(models.Model):
                     {UPDATE_QUERY};
                 """.format(
                     cohort_id=self.pk,
-                    values_query=sql.replace('FROM "posthog_person"', f', {self.pk} FROM "posthog_person"', 1,),
+                    values_query=sql.replace(
+                        'FROM "posthog_person"',
+                        f', {self.pk} FROM "posthog_person"',
+                        1,
+                    ),
                 )
 
             cursor = connection.cursor()
             with transaction.atomic():
                 cursor.execute(query, params)
-                if not use_clickhouse:
-                    self.last_calculation = timezone.now()
-                    self.errors_calculating = 0
-        except Exception as err:
-            if not use_clickhouse:
-                self.errors_calculating = F("errors_calculating") + 1
-            raise err
-        finally:
-            if not use_clickhouse:
-                self.is_calculating = False
-                self.save()
-
-    def calculate_people_ch(self):
-        if is_clickhouse_enabled():
-            from ee.clickhouse.models.cohort import recalculate_cohortpeople
-            from posthog.tasks.calculate_cohort import calculate_cohort
-
-            try:
-                recalculate_cohortpeople(self)
-                calculate_cohort(self.id)
                 self.last_calculation = timezone.now()
                 self.errors_calculating = 0
-            except Exception as e:
-                self.errors_calculating = F("errors_calculating") + 1
-                raise e
-            finally:
-                self.is_calculating = False
-                self.save()
+        except Exception as err:
+            self.errors_calculating = F("errors_calculating") + 1
+            raise err
+        finally:
+            self.is_calculating = False
+            self.save()
 
     def insert_users_by_list(self, items: List[str]) -> None:
         """
@@ -166,9 +146,6 @@ class Cohort(models.Model):
         Important! Does not insert into clickhouse
         """
         batchsize = 1000
-        use_clickhouse = is_clickhouse_enabled()
-        if use_clickhouse:
-            from ee.clickhouse.models.cohort import insert_static_cohort
         try:
             cursor = connection.cursor()
             for i in range(0, len(items), batchsize):
@@ -178,12 +155,14 @@ class Cohort(models.Model):
                     .filter(Q(persondistinctid__team_id=self.team_id, persondistinctid__distinct_id__in=batch))
                     .exclude(cohort__id=self.id)
                 )
-                if use_clickhouse:
-                    insert_static_cohort([p for p in persons_query.values_list("uuid", flat=True)], self.pk, self.team)
                 sql, params = persons_query.distinct("pk").only("pk").query.sql_with_params()
                 query = UPDATE_QUERY.format(
                     cohort_id=self.pk,
-                    values_query=sql.replace('FROM "posthog_person"', f', {self.pk} FROM "posthog_person"', 1,),
+                    values_query=sql.replace(
+                        'FROM "posthog_person"',
+                        f', {self.pk} FROM "posthog_person"',
+                        1,
+                    ),
                 )
                 cursor.execute(query, params)
             self.is_calculating = False
@@ -210,7 +189,11 @@ class Cohort(models.Model):
                 sql, params = persons_query.distinct("pk").only("pk").query.sql_with_params()
                 query = UPDATE_QUERY.format(
                     cohort_id=self.pk,
-                    values_query=sql.replace('FROM "posthog_person"', f', {self.pk} FROM "posthog_person"', 1,),
+                    values_query=sql.replace(
+                        'FROM "posthog_person"',
+                        f', {self.pk} FROM "posthog_person"',
+                        1,
+                    ),
                 )
                 cursor.execute(query, params)
 
@@ -228,12 +211,6 @@ class Cohort(models.Model):
 
     def __str__(self):
         return self.name
-
-    def _clickhouse_persons_query(self):
-        from ee.clickhouse.models.cohort import get_person_ids_by_cohort_id
-
-        uuids = get_person_ids_by_cohort_id(team=self.team, cohort_id=self.pk)
-        return Person.objects.filter(uuid__in=uuids, team=self.team)
 
     def _postgres_persons_query(self):
         return Person.objects.filter(self._people_filter(), team=self.team)

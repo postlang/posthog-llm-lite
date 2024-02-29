@@ -15,7 +15,6 @@ from posthog.api.test.test_event_definition import (
     create_user,
 )
 from posthog.constants import TREND_FILTER_TYPE_EVENTS
-from posthog.utils import is_clickhouse_enabled
 
 
 def identify(
@@ -33,16 +32,10 @@ def identify(
     """
     properties = properties or {}
 
-    if is_clickhouse_enabled():
-        from ee.clickhouse.models.person import Person, PersonDistinctId
+    from posthog.models.person import Person, PersonDistinctId
 
-        person = Person.objects.create(team_id=team_id, properties=properties)
-        PersonDistinctId.objects.create(distinct_id=distinct_id, team_id=team_id, person_id=person.id)
-    else:
-        from posthog.models.person import Person, PersonDistinctId
-
-        person = Person.objects.create(team_id=team_id, properties=properties)
-        PersonDistinctId.objects.create(distinct_id=distinct_id, team_id=team_id, person_id=person.id)
+    person = Person.objects.create(team_id=team_id, properties=properties)
+    PersonDistinctId.objects.create(distinct_id=distinct_id, team_id=team_id, person_id=person.id)
 
     capture_event(
         event=EventData(
@@ -114,14 +107,22 @@ def test_insight_retention_missing_persons_gh_5443(client: Client):
     #  period
     capture_event(
         event=EventData(
-            event="event_name", team_id=team.id, distinct_id="abc", timestamp=datetime(2021, 3, 29), properties={},
+            event="event_name",
+            team_id=team.id,
+            distinct_id="abc",
+            timestamp=datetime(2021, 3, 29),
+            properties={},
         )
     )
 
     # Create an event for just over a week from the initial identify event
     capture_event(
         event=EventData(
-            event="event_name", team_id=team.id, distinct_id="abc", timestamp=datetime(2021, 4, 5), properties={},
+            event="event_name",
+            team_id=team.id,
+            distinct_id="abc",
+            timestamp=datetime(2021, 4, 5),
+            properties={},
         )
     )
 

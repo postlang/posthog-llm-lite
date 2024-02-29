@@ -18,17 +18,13 @@ from posthog.test.base import BaseTest
 
 DEFAULT_CH_OP = AsyncMigrationOperation(sql="SELECT 1", timeout_seconds=10)
 
-DEFAULT_POSTGRES_OP = AsyncMigrationOperation(database=AnalyticsDBMS.POSTGRES, sql="SELECT 1",)
+DEFAULT_POSTGRES_OP = AsyncMigrationOperation(
+    database=AnalyticsDBMS.POSTGRES,
+    sql="SELECT 1",
+)
 
 
 class TestUtils(BaseTest):
-    @pytest.mark.ee
-    @patch("ee.clickhouse.client.sync_execute")
-    def test_execute_op_clickhouse(self, mock_sync_execute):
-        execute_op(DEFAULT_CH_OP, "some_id")
-
-        # correctly routes to ch
-        mock_sync_execute.assert_called_once_with("/* some_id */ SELECT 1", settings={"max_execution_time": 10})
 
     @patch("django.db.connection.cursor")
     def test_execute_op_postgres(self, mock_cursor):

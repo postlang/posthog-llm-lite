@@ -11,14 +11,22 @@ from sentry_sdk import capture_exception
 from posthog.event_usage import report_org_usage, report_org_usage_failure
 from posthog.models import Event, GroupTypeMapping, OrganizationMembership, Team, User
 from posthog.tasks.status_report import get_instance_licenses
-from posthog.utils import get_instance_realm, get_previous_day, is_clickhouse_enabled
+from posthog.utils import get_instance_realm, get_previous_day
 from posthog.version import VERSION
 
 logger = logging.getLogger(__name__)
 
 Period = TypedDict("Period", {"start_inclusive": str, "end_inclusive": str})
 
-OrgData = TypedDict("OrgData", {"teams": List[Union[str, int]], "user_count": int, "name": str, "created_at": str,},)
+OrgData = TypedDict(
+    "OrgData",
+    {
+        "teams": List[Union[str, int]],
+        "user_count": int,
+        "name": str,
+        "created_at": str,
+    },
+)
 
 OrgReportMetadata = TypedDict(
     "OrgReportMetadata",
@@ -92,7 +100,7 @@ def send_all_reports(
         "posthog_version": VERSION,
         "deployment_infrastructure": os.getenv("DEPLOYMENT", "unknown"),
         "realm": realm,
-        "is_clickhouse_enabled": is_clickhouse_enabled(),
+        "is_clickhouse_enabled": False,
         "period": {"start_inclusive": period_start.isoformat(), "end_inclusive": period_end.isoformat()},
         "site_url": os.getenv("SITE_URL", "unknown"),
         "license_keys": license_keys,
@@ -180,10 +188,14 @@ def get_org_usage(
     else:
         usage["event_count_lifetime"] = Event.objects.filter(team_id__in=team_ids).count()
         usage["event_count_in_period"] = Event.objects.filter(
-            team_id__in=team_ids, timestamp__gte=period_start, timestamp__lte=period_end,
+            team_id__in=team_ids,
+            timestamp__gte=period_start,
+            timestamp__lte=period_end,
         ).count()
         usage["event_count_in_month"] = Event.objects.filter(
-            team_id__in=team_ids, timestamp__gte=month_start, timestamp__lte=period_end,
+            team_id__in=team_ids,
+            timestamp__gte=month_start,
+            timestamp__lte=period_end,
         ).count()
 
     return usage
@@ -220,6 +232,7 @@ def get_org_owner_or_first_user(organization_id: str) -> Optional[User]:
         user = membership.user
     else:
         capture_exception(
-            Exception("No user found for org while generating report"), {"org": {"organization_id": organization_id}},
+            Exception("No user found for org while generating report"),
+            {"org": {"organization_id": organization_id}},
         )
     return user

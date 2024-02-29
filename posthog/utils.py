@@ -85,11 +85,15 @@ def get_previous_week(at: Optional[datetime.datetime] = None) -> Tuple[datetime.
         at = timezone.now()
 
     period_end: datetime.datetime = datetime.datetime.combine(
-        at - datetime.timedelta(timezone.now().weekday() + 1), datetime.time.max, tzinfo=pytz.UTC,
+        at - datetime.timedelta(timezone.now().weekday() + 1),
+        datetime.time.max,
+        tzinfo=pytz.UTC,
     )  # very end of the previous Sunday
 
     period_start: datetime.datetime = datetime.datetime.combine(
-        period_end - datetime.timedelta(6), datetime.time.min, tzinfo=pytz.UTC,
+        period_end - datetime.timedelta(6),
+        datetime.time.min,
+        tzinfo=pytz.UTC,
     )  # very start of the previous Monday
 
     return (period_start, period_end)
@@ -105,11 +109,15 @@ def get_previous_day(at: Optional[datetime.datetime] = None) -> Tuple[datetime.d
         at = timezone.now()
 
     period_end: datetime.datetime = datetime.datetime.combine(
-        at - datetime.timedelta(days=1), datetime.time.max, tzinfo=pytz.UTC,
+        at - datetime.timedelta(days=1),
+        datetime.time.max,
+        tzinfo=pytz.UTC,
     )  # very end of the previous day
 
     period_start: datetime.datetime = datetime.datetime.combine(
-        period_end, datetime.time.min, tzinfo=pytz.UTC,
+        period_end,
+        datetime.time.min,
+        tzinfo=pytz.UTC,
     )  # very start of the previous day
 
     return (period_start, period_end)
@@ -363,7 +371,8 @@ def convert_property_value(input: Union[str, bool, dict, list, int]) -> str:
 
 
 def get_compare_period_dates(
-    date_from: datetime.datetime, date_to: datetime.datetime,
+    date_from: datetime.datetime,
+    date_to: datetime.datetime,
 ) -> Tuple[datetime.datetime, datetime.datetime]:
     new_date_to = date_from
     diff = date_to - date_from
@@ -595,25 +604,18 @@ def queryset_to_named_query(qs: QuerySet, prepend: str = "") -> Tuple[str, dict]
     return new_string, named_params
 
 
-def is_clickhouse_enabled() -> bool:
-    return settings.EE_AVAILABLE and settings.PRIMARY_DB == AnalyticsDBMS.CLICKHOUSE
-
-
 def get_instance_realm() -> str:
     """
     Returns the realm for the current instance. `cloud` or `hosted` or `hosted-clickhouse`.
     """
     if settings.MULTI_TENANCY:
         return "cloud"
-    elif is_clickhouse_enabled():
-        return "hosted-clickhouse"
     else:
         return "hosted"
 
 
 def get_can_create_org() -> bool:
-    """Returns whether a new organization can be created in the current instance.
-    """
+    """Returns whether a new organization can be created in the current instance."""
     return True
 
 
@@ -636,7 +638,9 @@ def get_available_social_auth_providers() -> Dict[str, bool]:
         license = License.objects.first_valid()
 
     if getattr(settings, "SOCIAL_AUTH_GOOGLE_OAUTH2_KEY", None) and getattr(
-        settings, "SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET", None,
+        settings,
+        "SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET",
+        None,
     ):
         if bypass_license or (license is not None and AvailableFeature.GOOGLE_LOGIN in license.available_features):
             output["google-oauth2"] = True
@@ -795,7 +799,16 @@ def str_to_bool(value: Any) -> bool:
 def print_warning(warning_lines: Sequence[str]):
     highlight_length = min(max(map(len, warning_lines)) // 2, shutil.get_terminal_size().columns)
     print(
-        "\n".join(("", "🔻" * highlight_length, *warning_lines, "🔺" * highlight_length, "",)), file=sys.stderr,
+        "\n".join(
+            (
+                "",
+                "🔻" * highlight_length,
+                *warning_lines,
+                "🔺" * highlight_length,
+                "",
+            )
+        ),
+        file=sys.stderr,
     )
 
 
@@ -813,8 +826,8 @@ def format_query_params_absolute_url(
     offset_alias: Optional[str] = "offset",
     limit_alias: Optional[str] = "limit",
 ) -> Optional[str]:
-    OFFSET_REGEX = re.compile(fr"([&?]{offset_alias}=)(\d+)")
-    LIMIT_REGEX = re.compile(fr"([&?]{limit_alias}=)(\d+)")
+    OFFSET_REGEX = re.compile(rf"([&?]{offset_alias}=)(\d+)")
+    LIMIT_REGEX = re.compile(rf"([&?]{limit_alias}=)(\d+)")
 
     url_to_format = request.get_raw_uri()
 
@@ -823,13 +836,13 @@ def format_query_params_absolute_url(
 
     if offset:
         if OFFSET_REGEX.search(url_to_format):
-            url_to_format = OFFSET_REGEX.sub(fr"\g<1>{offset}", url_to_format)
+            url_to_format = OFFSET_REGEX.sub(rf"\g<1>{offset}", url_to_format)
         else:
             url_to_format = url_to_format + ("&" if "?" in url_to_format else "?") + f"{offset_alias}={offset}"
 
     if limit:
         if LIMIT_REGEX.search(url_to_format):
-            url_to_format = LIMIT_REGEX.sub(fr"\g<1>{limit}", url_to_format)
+            url_to_format = LIMIT_REGEX.sub(rf"\g<1>{limit}", url_to_format)
         else:
             url_to_format = url_to_format + ("&" if "?" in url_to_format else "?") + f"{limit_alias}={limit}"
 

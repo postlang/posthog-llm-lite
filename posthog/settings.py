@@ -104,7 +104,9 @@ TEST = (
     "test" in sys.argv or sys.argv[0].endswith("pytest") or get_from_env("TEST", False, type_cast=str_to_bool)
 )  # type: bool
 E2E_TESTING = get_from_env(
-    "E2E_TESTING", False, type_cast=str_to_bool,
+    "E2E_TESTING",
+    False,
+    type_cast=str_to_bool,
 )  # whether the app is currently running for E2E tests
 if E2E_TESTING:
     print_warning(
@@ -152,9 +154,11 @@ else:
 DISABLE_MMDB = get_from_env(
     "DISABLE_MMDB", TEST, type_cast=str_to_bool
 )  # plugin server setting disabling GeoIP feature
-PLUGINS_PREINSTALLED_URLS: List[str] = os.getenv(
-    "PLUGINS_PREINSTALLED_URLS", "https://github.com/PostHog/posthog-plugin-geoip"
-).split(",") if not DISABLE_MMDB else []
+PLUGINS_PREINSTALLED_URLS: List[str] = (
+    os.getenv("PLUGINS_PREINSTALLED_URLS", "https://github.com/PostHog/posthog-plugin-geoip").split(",")
+    if not DISABLE_MMDB
+    else []
+)
 PLUGINS_CELERY_QUEUE = os.getenv("PLUGINS_CELERY_QUEUE", "posthog-plugins")
 PLUGINS_RELOAD_PUBSUB_CHANNEL = os.getenv("PLUGINS_RELOAD_PUBSUB_CHANNEL", "reload-plugins")
 
@@ -232,7 +236,6 @@ CLICKHOUSE_CLUSTER = os.getenv("CLICKHOUSE_CLUSTER", "posthog")
 CLICKHOUSE_CA = os.getenv("CLICKHOUSE_CA", None)
 CLICKHOUSE_SECURE = get_from_env("CLICKHOUSE_SECURE", not TEST and not DEBUG, type_cast=str_to_bool)
 CLICKHOUSE_VERIFY = get_from_env("CLICKHOUSE_VERIFY", True, type_cast=str_to_bool)
-CLICKHOUSE_REPLICATION = get_from_env("CLICKHOUSE_REPLICATION", False, type_cast=str_to_bool)
 CLICKHOUSE_ENABLE_STORAGE_POLICY = get_from_env("CLICKHOUSE_ENABLE_STORAGE_POLICY", False, type_cast=str_to_bool)
 CLICKHOUSE_ASYNC = get_from_env("CLICKHOUSE_ASYNC", False, type_cast=str_to_bool)
 
@@ -532,7 +535,7 @@ if not REDIS_URL:
 # NB! This is set to explicitly exclude the "posthog-plugins" queue, handled by a nodejs process
 CELERY_QUEUES = (Queue("celery", Exchange("celery"), "celery"),)
 CELERY_DEFAULT_QUEUE = "celery"
-CELERY_IMPORTS = ["ee.tasks.materialized_columns"] if PRIMARY_DB == AnalyticsDBMS.CLICKHOUSE and EE_AVAILABLE else []
+CELERY_IMPORTS = []
 CELERY_BROKER_URL = REDIS_URL  # celery connects to redis
 CELERY_BEAT_MAX_LOOP_INTERVAL = 30  # sleep max 30sec before checking for new periodic events
 CELERY_RESULT_BACKEND = REDIS_URL  # stores results for lookup when processing
@@ -548,7 +551,9 @@ SESSION_RECORDING_TTL = 30  # how long to keep session recording cache. Relative
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
 ]
 
 PASSWORD_RESET_TIMEOUT = 86_400  # 1 day
@@ -561,9 +566,6 @@ SHELL_PLUS_POST_IMPORTS = [
     ("posthog.models.filters", ("Filter",)),
     ("posthog.models.property", ("Property",)),
 ]
-
-if PRIMARY_DB == AnalyticsDBMS.CLICKHOUSE:
-    SHELL_PLUS_POST_IMPORTS.append(("ee.clickhouse.client", ("sync_execute",)))
 
 
 # Internationalization
@@ -699,12 +701,23 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "default": {"()": structlog.stdlib.ProcessorFormatter, "processor": structlog.dev.ConsoleRenderer(),},
-        "json": {"()": structlog.stdlib.ProcessorFormatter, "processor": structlog.processors.JSONRenderer(),},
+        "default": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+        "json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": LOGGING_FORMATTER_NAME,},
-        "null": {"class": "logging.NullHandler",},
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": LOGGING_FORMATTER_NAME,
+        },
+        "null": {
+            "class": "logging.NullHandler",
+        },
     },
     "root": {"handlers": ["console"], "level": DEFAULT_LOG_LEVEL},
     "loggers": {
@@ -750,14 +763,15 @@ if SKIP_SERVICE_VERSION_REQUIREMENTS and not (TEST or DEBUG):
     print_warning(["Skipping service version requirements. This is dangerous and PostHog might not work as expected!"])
 
 SERVICE_VERSION_REQUIREMENTS = [
-    ServiceVersionRequirement(service="postgresql", supported_version=">=11.0.0,<=14.1.0",),
-    ServiceVersionRequirement(service="redis", supported_version=">=5.0.0,<=6.3.0",),
+    ServiceVersionRequirement(
+        service="postgresql",
+        supported_version=">=11.0.0,<=14.1.0",
+    ),
+    ServiceVersionRequirement(
+        service="redis",
+        supported_version=">=5.0.0,<=6.3.0",
+    ),
 ]
-
-if PRIMARY_DB == AnalyticsDBMS.CLICKHOUSE:
-    SERVICE_VERSION_REQUIREMENTS = SERVICE_VERSION_REQUIREMENTS + [
-        ServiceVersionRequirement(service="clickhouse", supported_version=">=21.6.0,<21.7.0"),
-    ]
 
 AUTO_START_ASYNC_MIGRATIONS = get_from_env("AUTO_START_ASYNC_MIGRATIONS", False, type_cast=str_to_bool)
 

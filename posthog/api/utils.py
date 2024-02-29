@@ -21,7 +21,7 @@ from posthog.models import Entity
 from posthog.models.entity import MATH_TYPE
 from posthog.models.team import Team
 from posthog.models.user import User
-from posthog.utils import cors_response, is_clickhouse_enabled, load_data_from_request
+from posthog.utils import cors_response, load_data_from_request
 
 
 class PaginationMode(Enum):
@@ -177,17 +177,16 @@ def get_team(request, data, token) -> Tuple[Optional[Team], Optional[str], Optio
 
         db_error = getattr(e, "message", repr(e))
 
-        if not is_clickhouse_enabled():
-            error_response = cors_response(
-                request,
-                generate_exception_response(
-                    "capture",
-                    "Unable to fetch team from database.",
-                    type="server_error",
-                    code="fetch_team_fail",
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                ),
-            )
+        error_response = cors_response(
+            request,
+            generate_exception_response(
+                "capture",
+                "Unable to fetch team from database.",
+                type="server_error",
+                code="fetch_team_fail",
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            ),
+        )
 
         return None, db_error, error_response
 

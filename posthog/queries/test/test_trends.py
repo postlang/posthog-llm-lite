@@ -40,7 +40,11 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                 data.update({"events": json.dumps(data["events"])})
             response = self.client.get(
                 f"/api/projects/{self.team.id}/actions/people/",
-                data={**data, ENTITY_TYPE: entity.type, ENTITY_ID: entity.id,},
+                data={
+                    **data,
+                    ENTITY_TYPE: entity.type,
+                    ENTITY_ID: entity.id,
+                },
             ).json()
             return response["results"][0]["people"]
 
@@ -86,7 +90,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                     team=self.team,
                     event="sign up",
                     distinct_id="blabla",
-                    properties={"$some_property": "other_value", "$some_numerical_prop": 80,},
+                    properties={
+                        "$some_property": "other_value",
+                        "$some_numerical_prop": 80,
+                    },
                 )
                 event_factory(team=self.team, event="no events", distinct_id="blabla")
 
@@ -111,7 +118,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             with freeze_time(freeze_without_time[0]):
                 for i in range(25):
                     event_factory(
-                        team=self.team, event="sign up", distinct_id="blabla", properties={"$some_property": i},
+                        team=self.team,
+                        event="sign up",
+                        distinct_id="blabla",
+                        properties={"$some_property": i},
                     )
             sign_up_action = action_factory(team=self.team, name="sign up")
 
@@ -120,7 +130,13 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             with freeze_time("2020-01-04T13:00:01Z"):
                 # with self.assertNumQueries(16):
                 response = trends().run(
-                    Filter(data={"date_from": "-7d", "events": [{"id": "sign up"}, {"id": "no events"}],}), self.team,
+                    Filter(
+                        data={
+                            "date_from": "-7d",
+                            "events": [{"id": "sign up"}, {"id": "no events"}],
+                        }
+                    ),
+                    self.team,
                 )
             self.assertEqual(response[0]["label"], "sign up")
             self.assertEqual(response[0]["labels"][4], "1-Jan-2020")
@@ -137,7 +153,12 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": "$some_property",
                             "events": [
-                                {"id": "sign up", "name": "sign up", "type": "events", "order": 0,},
+                                {
+                                    "id": "sign up",
+                                    "name": "sign up",
+                                    "type": "events",
+                                    "order": 0,
+                                },
                                 {"id": "no events"},
                             ],
                         }
@@ -200,7 +221,11 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             with freeze_time("2020-01-04T13:00:01Z"):
                 weekly_response = trends().run(
                     Filter(
-                        data={"display": TRENDS_TABLE, "interval": "day", "events": [{"id": "sign up", "math": "dau"}],}
+                        data={
+                            "display": TRENDS_TABLE,
+                            "interval": "day",
+                            "events": [{"id": "sign up", "math": "dau"}],
+                        }
                     ),
                     self.team,
                 )
@@ -215,27 +240,48 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             )
             with freeze_time("2020-01-01 00:06:34"):
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 1},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 1},
                 )
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 1},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 1},
                 )
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 1},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 1},
                 )
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 2},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 2},
                 )
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 3},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 3},
                 )
 
             with freeze_time("2020-01-02 00:06:34"):
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 4},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 4},
                 )
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$math_prop": 4},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$math_prop": 4},
                 )
 
             with freeze_time("2020-01-04T13:00:01Z"):
@@ -405,7 +451,13 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
 
             with freeze_time("2020-01-04T13:00:01Z"):
                 daily_response = trends().run(
-                    Filter(data={"display": TRENDS_TABLE, "breakdown": "$browser", "events": [{"id": "sign up"}],}),
+                    Filter(
+                        data={
+                            "display": TRENDS_TABLE,
+                            "breakdown": "$browser",
+                            "events": [{"id": "sign up"}],
+                        }
+                    ),
                     self.team,
                 )
 
@@ -570,16 +622,23 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             for time in dates:
                 with freeze_time(time):
                     event_factory(
-                        event="event_name", team=self.team, distinct_id="person_1", properties={"$browser": "Safari"},
+                        event="event_name",
+                        team=self.team,
+                        distinct_id="person_1",
+                        properties={"$browser": "Safari"},
                     )
 
             if query_time:
                 with freeze_time(query_time):
                     response = trends().run(
-                        Filter(data={**filter_params, "events": [{"id": "event_name"}]}), self.team,
+                        Filter(data={**filter_params, "events": [{"id": "event_name"}]}),
+                        self.team,
                     )
             else:
-                response = trends().run(Filter(data={**filter_params, "events": [{"id": "event_name"}]}), self.team,)
+                response = trends().run(
+                    Filter(data={**filter_params, "events": [{"id": "event_name"}]}),
+                    self.team,
+                )
 
             self.assertEqual(result[0]["count"], response[0]["count"])
             self.assertEqual(result[0]["data"], response[0]["data"])
@@ -748,7 +807,13 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                         "label": "event_name",
                         "count": 4.0,
                         "data": [0.0, 1.0, 2.0, 1.0, 0.0],
-                        "labels": ["25-Oct-2020", "1-Nov-2020", "8-Nov-2020", "15-Nov-2020", "22-Nov-2020",],
+                        "labels": [
+                            "25-Oct-2020",
+                            "1-Nov-2020",
+                            "8-Nov-2020",
+                            "15-Nov-2020",
+                            "22-Nov-2020",
+                        ],
                         "days": ["2020-10-25", "2020-11-01", "2020-11-08", "2020-11-15", "2020-11-22"],
                     }
                 ],
@@ -812,7 +877,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
 
         def test_interval_rounding_monthly(self):
             self._test_events_with_dates(
-                dates=["2020-06-2", "2020-07-30",],
+                dates=[
+                    "2020-06-2",
+                    "2020-07-30",
+                ],
                 interval="month",
                 date_from="2020-6-7",  #  should round down to 6-1
                 date_to="2020-7-30",
@@ -831,9 +899,15 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                         },
                         "label": "event_name",
                         "count": 2.0,
-                        "data": [1.0, 1.0,],
+                        "data": [
+                            1.0,
+                            1.0,
+                        ],
                         "labels": ["1-Jun-2020", "1-Jul-2020"],
-                        "days": ["2020-06-01", "2020-07-01",],
+                        "days": [
+                            "2020-06-01",
+                            "2020-07-01",
+                        ],
                     }
                 ],
             )
@@ -1335,13 +1409,22 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             person2 = person_factory(team_id=self.team.pk, distinct_ids=["person_2"], properties={"name": "Jane"})
 
             event1 = event_factory(
-                event="event_name", team=self.team, distinct_id="person_1", properties={"$browser": "Safari"},
+                event="event_name",
+                team=self.team,
+                distinct_id="person_1",
+                properties={"$browser": "Safari"},
             )
             event2 = event_factory(
-                event="event_name", team=self.team, distinct_id="person_2", properties={"$browser": "Chrome"},
+                event="event_name",
+                team=self.team,
+                distinct_id="person_2",
+                properties={"$browser": "Chrome"},
             )
             event3 = event_factory(
-                event="event_name", team=self.team, distinct_id="person_2", properties={"$browser": "Safari"},
+                event="event_name",
+                team=self.team,
+                distinct_id="person_2",
+                properties={"$browser": "Safari"},
             )
 
             cohort = cohort_factory(
@@ -1466,7 +1549,12 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": "$bool_prop",
                             "events": [
-                                {"id": "sign up", "name": "sign up", "type": "events", "order": 0,},
+                                {
+                                    "id": "sign up",
+                                    "name": "sign up",
+                                    "type": "events",
+                                    "order": 0,
+                                },
                                 {"id": "no events"},
                             ],
                         }
@@ -1486,7 +1574,12 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": "$some_property",
                             "events": [
-                                {"id": "sign up", "name": "sign up", "type": "events", "order": 0,},
+                                {
+                                    "id": "sign up",
+                                    "name": "sign up",
+                                    "type": "events",
+                                    "order": 0,
+                                },
                                 {"id": "no events"},
                             ],
                         }
@@ -1515,7 +1608,12 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": "$some_numerical_prop",
                             "events": [
-                                {"id": "sign up", "name": "sign up", "type": "events", "order": 0,},
+                                {
+                                    "id": "sign up",
+                                    "name": "sign up",
+                                    "type": "events",
+                                    "order": 0,
+                                },
                                 {"id": "no events"},
                             ],
                         }
@@ -1580,7 +1678,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                     data={
                         "date_from": "-14d",
                         "breakdown": "key",
-                        "events": [{"id": "sign up", "name": "sign up", "type": "events", "order": 0,}],
+                        "events": [
+                            {
+                                "id": "sign up",
+                                "name": "sign up",
+                                "type": "events",
+                                "order": 0,
+                            }
+                        ],
                         "properties": [{"key": "key", "value": "oh", "operator": "not_icontains"}],
                     }
                 ),
@@ -1634,7 +1739,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             event_filtering_action.calculate_events()
 
             with freeze_time("2020-01-04T13:01:01Z"):
-                response = trends().run(Filter({"actions": [{"id": event_filtering_action.id}],}), self.team)
+                response = trends().run(
+                    Filter(
+                        {
+                            "actions": [{"id": event_filtering_action.id}],
+                        }
+                    ),
+                    self.team,
+                )
             self.assertEqual(len(response), 1)
             self.assertEqual(response[0]["count"], 3)
 
@@ -1675,7 +1787,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             sign_up_action, _ = self._create_events()
             with freeze_time("2020-01-02"):
                 event_factory(
-                    team=self.team, event="sign up", distinct_id="blabla", properties={"$some_property": "other_value"},
+                    team=self.team,
+                    event="sign up",
+                    distinct_id="blabla",
+                    properties={"$some_property": "other_value"},
                 )
             with freeze_time("2020-01-04"):
                 action_response = trends().run(
@@ -1787,8 +1902,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                         data={
                             "date_from": "-7d",
                             "events": [
-                                {"id": "sign up", "properties": [{"key": "$some_property", "value": "value"}],},
-                                {"id": "sign up", "properties": [{"key": "$some_property", "value": "other_value"}],},
+                                {
+                                    "id": "sign up",
+                                    "properties": [{"key": "$some_property", "value": "value"}],
+                                },
+                                {
+                                    "id": "sign up",
+                                    "properties": [{"key": "$some_property", "value": "other_value"}],
+                                },
                             ],
                         }
                     ),
@@ -1877,7 +1998,13 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                 response = trends().run(
                     Filter(
                         data={
-                            "properties": [{"key": "name", "value": "person1", "type": "person",}],
+                            "properties": [
+                                {
+                                    "key": "name",
+                                    "value": "person1",
+                                    "type": "person",
+                                }
+                            ],
                             "events": [{"id": "watched movie"}],
                         }
                     ),
@@ -1898,7 +2025,13 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "events": [
                                 {
                                     "id": "watched movie",
-                                    "properties": [{"key": "name", "value": "person1", "type": "person",}],
+                                    "properties": [
+                                        {
+                                            "key": "name",
+                                            "value": "person1",
+                                            "type": "person",
+                                        }
+                                    ],
                                 }
                             ],
                         }
@@ -1913,7 +2046,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
         def test_breakdown_by_empty_cohort(self):
             p1 = person_factory(team_id=self.team.pk, distinct_ids=["p1"], properties={"name": "p1"})
             event_factory(
-                team=self.team, event="$pageview", distinct_id="p1", timestamp="2020-01-04T12:00:00Z",
+                team=self.team,
+                event="$pageview",
+                distinct_id="p1",
+                timestamp="2020-01-04T12:00:00Z",
             )
 
             with freeze_time("2020-01-04T13:01:01Z"):
@@ -1940,7 +2076,10 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             cohort3 = cohort_factory(
                 name="cohort3",
                 team=self.team,
-                groups=[{"properties": {"name": "person1"}}, {"properties": {"name": "person2"}},],
+                groups=[
+                    {"properties": {"name": "person1"}},
+                    {"properties": {"name": "person2"}},
+                ],
             )
             action = action_factory(name="watched movie", team=self.team)
             action.calculate_events()
@@ -1963,7 +2102,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": json.dumps([cohort.pk, cohort2.pk, cohort3.pk, "all"]),
                             "breakdown_type": "cohort",
-                            "events": [{"id": "watched movie", "name": "watched movie", "type": "events", "order": 0,}],
+                            "events": [
+                                {
+                                    "id": "watched movie",
+                                    "name": "watched movie",
+                                    "type": "events",
+                                    "order": 0,
+                                }
+                            ],
                         }
                     ),
                     self.team,
@@ -1986,7 +2132,8 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
             self.assertEqual(break_val["watched movie - all users"], "all")
 
             self.assertEntityResponseEqual(
-                event_response, action_response,
+                event_response,
+                action_response,
             )
 
         @test_with_materialized_columns(verify_no_jsonextract=False)
@@ -2117,7 +2264,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                             "date_from": "-14d",
                             "breakdown": "name",
                             "breakdown_type": "person",
-                            "events": [{"id": "watched movie", "name": "watched movie", "type": "events", "order": 0,}],
+                            "events": [
+                                {
+                                    "id": "watched movie",
+                                    "name": "watched movie",
+                                    "type": "events",
+                                    "order": 0,
+                                }
+                            ],
                         }
                     ),
                     self.team,
@@ -2137,7 +2291,8 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                     self.assertEqual(response["count"], 3)
 
             self.assertEntityResponseEqual(
-                event_response, action_response,
+                event_response,
+                action_response,
             )
 
         def test_breakdown_by_property_pie(self):
@@ -2191,10 +2346,19 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                     "breakdown_type": "event",
                     "display": "ActionsPie",
                     "events": [
-                        {"id": "watched movie", "name": "watched movie", "type": "events", "order": 0, "math": "dau",}
+                        {
+                            "id": "watched movie",
+                            "name": "watched movie",
+                            "type": "events",
+                            "order": 0,
+                            "math": "dau",
+                        }
                     ],
                 }
-                event_response = trends().run(Filter(data=data), self.team,)
+                event_response = trends().run(
+                    Filter(data=data),
+                    self.team,
+                )
                 event_response = sorted(event_response, key=lambda resp: resp["breakdown_value"])
 
                 entity = Entity({"id": "watched movie", "type": "events", "math": "dau"})
@@ -2271,13 +2435,28 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                 "filter_test_accounts": "true",
             }
             filter = Filter(data=data, team=self.team)
-            filter_2 = Filter(data={**data, "filter_test_accounts": "false",}, team=self.team)
+            filter_2 = Filter(
+                data={
+                    **data,
+                    "filter_test_accounts": "false",
+                },
+                team=self.team,
+            )
             filter_3 = Filter(data={**data, "breakdown": "key"}, team=self.team)
-            result = trends().run(filter, self.team,)
+            result = trends().run(
+                filter,
+                self.team,
+            )
             self.assertEqual(result[0]["count"], 1)
-            result = trends().run(filter_2, self.team,)
+            result = trends().run(
+                filter_2,
+                self.team,
+            )
             self.assertEqual(result[0]["count"], 2)
-            result = trends().run(filter_3, self.team,)
+            result = trends().run(
+                filter_3,
+                self.team,
+            )
             self.assertEqual(result[0]["count"], 1)
 
         @test_with_materialized_columns(person_properties=["name"])
@@ -2318,7 +2497,7 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                 name="cohort1",
                 groups=[{"properties": [{"key": "name", "value": "Jane", "type": "person"}]}],
             )
-            cohort.calculate_people_ch()
+
             with self.settings(USE_PRECALCULATED_CH_COHORT_PEOPLE=True):
                 response = trends().run(
                     Filter(
@@ -2347,7 +2526,6 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                 name="cohort1",
                 groups=[{"properties": [{"key": "name", "value": "Jane", "type": "person"}]}],
             )
-            cohort.calculate_people_ch()
 
             with self.settings(USE_PRECALCULATED_CH_COHORT_PEOPLE=True):
                 response = trends().run(
@@ -2408,7 +2586,14 @@ def trend_test_factory(trends, event_factory, person_factory, action_factory, co
                         data={
                             "date_from": "-7d",
                             "breakdown": "$some_property",
-                            "events": [{"id": "sign up", "name": "sign up", "type": "events", "order": 0,},],
+                            "events": [
+                                {
+                                    "id": "sign up",
+                                    "name": "sign up",
+                                    "type": "events",
+                                    "order": 0,
+                                },
+                            ],
                             "display": TRENDS_BAR_VALUE,
                         }
                     ),

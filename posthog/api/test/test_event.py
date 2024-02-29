@@ -71,13 +71,21 @@ def factory_test_event_api(event_factory, person_factory, _):
 
         def test_filter_events_by_event_name(self):
             person_factory(
-                properties={"email": "tim@posthog.com"}, team=self.team, distinct_ids=["2", "some-random-uid"],
+                properties={"email": "tim@posthog.com"},
+                team=self.team,
+                distinct_ids=["2", "some-random-uid"],
             )
             event_factory(
-                event="event_name", team=self.team, distinct_id="2", properties={"$ip": "8.8.8.8"},
+                event="event_name",
+                team=self.team,
+                distinct_id="2",
+                properties={"$ip": "8.8.8.8"},
             )
             event_factory(
-                event="another event", team=self.team, distinct_id="2", properties={"$ip": "8.8.8.8"},
+                event="another event",
+                team=self.team,
+                distinct_id="2",
+                properties={"$ip": "8.8.8.8"},
             )
 
             expected_queries = 4  # Django session, PostHog user, PostHog team, PostHog org membership
@@ -90,13 +98,21 @@ def factory_test_event_api(event_factory, person_factory, _):
 
         def test_filter_events_by_properties(self):
             person_factory(
-                properties={"email": "tim@posthog.com"}, team=self.team, distinct_ids=["2", "some-random-uid"],
+                properties={"email": "tim@posthog.com"},
+                team=self.team,
+                distinct_ids=["2", "some-random-uid"],
             )
             event_factory(
-                event="event_name", team=self.team, distinct_id="2", properties={"$browser": "Chrome"},
+                event="event_name",
+                team=self.team,
+                distinct_id="2",
+                properties={"$browser": "Chrome"},
             )
             event2 = event_factory(
-                event="event_name", team=self.team, distinct_id="2", properties={"$browser": "Safari"},
+                event="event_name",
+                team=self.team,
+                distinct_id="2",
+                properties={"$browser": "Safari"},
             )
 
             expected_queries = 4  # Django session, PostHog user, PostHog team, PostHog org membership
@@ -122,17 +138,26 @@ def factory_test_event_api(event_factory, person_factory, _):
         def test_filter_events_by_precalculated_cohort(self):
             p1 = Person.objects.create(team_id=self.team.pk, distinct_ids=["p1"], properties={"key": "value"})
             event_factory(
-                team=self.team, event="$pageview", distinct_id="p1", timestamp="2020-01-02T12:00:00Z",
+                team=self.team,
+                event="$pageview",
+                distinct_id="p1",
+                timestamp="2020-01-02T12:00:00Z",
             )
 
             p2 = Person.objects.create(team_id=self.team.pk, distinct_ids=["p2"], properties={"key": "value"})
             event_factory(
-                team=self.team, event="$pageview", distinct_id="p2", timestamp="2020-01-02T12:00:00Z",
+                team=self.team,
+                event="$pageview",
+                distinct_id="p2",
+                timestamp="2020-01-02T12:00:00Z",
             )
 
             p3 = Person.objects.create(team_id=self.team.pk, distinct_ids=["p3"], properties={"key_2": "value_2"})
             event_factory(
-                team=self.team, event="$pageview", distinct_id="p3", timestamp="2020-01-02T12:00:00Z",
+                team=self.team,
+                event="$pageview",
+                distinct_id="p3",
+                timestamp="2020-01-02T12:00:00Z",
             )
 
             cohort1 = Cohort.objects.create(
@@ -142,7 +167,6 @@ def factory_test_event_api(event_factory, person_factory, _):
             )
 
             cohort1.calculate_people()
-            cohort1.calculate_people_ch()
 
             with self.settings(USE_PRECALCULATED_CH_COHORT_PEOPLE=True):  # Normally this is False in tests
                 with freeze_time("2020-01-04T13:01:01Z"):
@@ -155,7 +179,9 @@ def factory_test_event_api(event_factory, person_factory, _):
 
         def test_filter_by_person(self):
             person = person_factory(
-                properties={"email": "tim@posthog.com"}, distinct_ids=["2", "some-random-uid"], team=self.team,
+                properties={"email": "tim@posthog.com"},
+                distinct_ids=["2", "some-random-uid"],
+                team=self.team,
             )
 
             event_factory(event="random event", team=self.team, distinct_id="2", properties={"$ip": "8.8.8.8"})
@@ -309,7 +335,9 @@ def factory_test_event_api(event_factory, person_factory, _):
             user = self._create_user("tim")
             self.client.force_login(user)
             person_factory(
-                properties={"email": "tim@posthog.com"}, team=self.team, distinct_ids=["2", "some-random-uid"],
+                properties={"email": "tim@posthog.com"},
+                team=self.team,
+                distinct_ids=["2", "some-random-uid"],
             )
 
             with freeze_time("2020-01-10"):
@@ -366,17 +394,6 @@ def factory_test_event_api(event_factory, person_factory, _):
                 )
 
                 page2 = self.client.get(response["next"]).json()
-                from posthog.utils import is_clickhouse_enabled
-
-                if is_clickhouse_enabled():
-                    from ee.clickhouse.client import sync_execute
-
-                    self.assertEqual(
-                        sync_execute(
-                            "select count(*) from events where team_id = %(team_id)s", {"team_id": self.team.pk}
-                        )[0][0],
-                        250,
-                    )
 
                 self.assertEqual(len(page2["results"]), 100)
                 self.assertEqual(
@@ -422,17 +439,6 @@ def factory_test_event_api(event_factory, person_factory, _):
                 self.assertIn(f"after={after}", unquote(response["next"]))
 
                 page2 = self.client.get(response["next"]).json()
-                from posthog.utils import is_clickhouse_enabled
-
-                if is_clickhouse_enabled():
-                    from ee.clickhouse.client import sync_execute
-
-                    self.assertEqual(
-                        sync_execute(
-                            "select count(*) from events where team_id = %(team_id)s", {"team_id": self.team.pk}
-                        )[0][0],
-                        25,
-                    )
 
                 self.assertEqual(len(page2["results"]), 10)
                 self.assertIn(f"before=", unquote(page2["next"]))
@@ -506,7 +512,9 @@ def factory_test_event_api(event_factory, person_factory, _):
                     event_factory(team=self.team, event="5th action", distinct_id="2", properties={"$os": "Windows 95"})
                 response = self.client.get(f"/api/projects/{self.team.id}/events.csv?limit=5")
             self.assertEqual(
-                len(response.content.splitlines()), 6, "CSV export should return up to limit=5 events (+ headers row)",
+                len(response.content.splitlines()),
+                6,
+                "CSV export should return up to limit=5 events (+ headers row)",
             )
 
         @patch("posthog.api.event.EventViewSet.CSV_EXPORT_DEFAULT_LIMIT", 10)
@@ -548,31 +556,23 @@ def factory_test_event_api(event_factory, person_factory, _):
         def test_get_event_by_id(self):
             event_id: Union[str, int] = 12345
 
-            if settings.PRIMARY_DB == AnalyticsDBMS.CLICKHOUSE:
-                from ee.clickhouse.models.event import create_event
+            event_factory(team=self.team, event="event", distinct_id="1", timestamp=timezone.now(), id=event_id)
 
-                event_id = "01793986-dc4b-0000-93e8-1fb646df3a93"
-                Event(
-                    pk=create_event(
-                        team=self.team,
-                        event="event",
-                        distinct_id="1",
-                        timestamp=timezone.now(),
-                        event_uuid=uuid.UUID(event_id),
-                    )
-                )
-            else:
-                event_factory(team=self.team, event="event", distinct_id="1", timestamp=timezone.now(), id=event_id)
-
-            response = self.client.get(f"/api/projects/{self.team.id}/events/{event_id}",)
+            response = self.client.get(
+                f"/api/projects/{self.team.id}/events/{event_id}",
+            )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.json()["event"], "event")
 
-            response = self.client.get(f"/api/projects/{self.team.id}/events/123456",)
+            response = self.client.get(
+                f"/api/projects/{self.team.id}/events/123456",
+            )
             # EE will inform the user the ID passed is not a valid UUID
             self.assertIn(response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_400_BAD_REQUEST])
 
-            response = self.client.get(f"/api/projects/{self.team.id}/events/im_a_string_not_an_integer",)
+            response = self.client.get(
+                f"/api/projects/{self.team.id}/events/im_a_string_not_an_integer",
+            )
             self.assertIn(response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_400_BAD_REQUEST])
 
         def test_limit(self):

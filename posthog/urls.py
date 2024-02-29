@@ -46,23 +46,17 @@ def authorize_and_redirect(request):
     return render_template(
         "authorize_and_redirect.html",
         request=request,
-        context={"domain": urlparse(url).hostname, "redirect_url": url,},
+        context={
+            "domain": urlparse(url).hostname,
+            "redirect_url": url,
+        },
     )
-
-
-# Try to include EE endpoints
-ee_urlpatterns: List[Any] = []
-if settings.EE_AVAILABLE:
-    from ee.urls import extend_api_router
-    from ee.urls import urlpatterns as ee_urlpatterns
-
-    extend_api_router(router, projects_router=projects_router)
 
 
 def opt_slash_path(route: str, view: Callable, name: Optional[str] = None) -> URLPattern:
     """Catches path with or without trailing slash, taking into account query param and hash."""
     # Ignoring the type because while name can be optional on re_path, mypy doesn't agree
-    return re_path(fr"^{route}/?(?:[?#].*)?$", view, name=name)  # type: ignore
+    return re_path(rf"^{route}/?(?:[?#].*)?$", view, name=name)  # type: ignore
 
 
 urlpatterns = [
@@ -73,8 +67,6 @@ urlpatterns = [
     # admin
     path("admin/", include("loginas.urls")),
     path("admin/", admin.site.urls),
-    # ee
-    *ee_urlpatterns,
     # api
     path("api/", include(router.urls)),
     opt_slash_path("api/user/redirect_to_site", user.redirect_to_site),

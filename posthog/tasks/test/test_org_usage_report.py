@@ -38,7 +38,6 @@ def factory_org_usage_report(
             self.assertEqual(all_reports[0]["posthog_version"], VERSION)
             self.assertEqual(all_reports[0]["deployment_infrastructure"], "tests")
             self.assertIsNotNone(all_reports[0]["realm"])
-            self.assertIsNotNone(all_reports[0]["is_clickhouse_enabled"])
             self.assertIsNotNone(all_reports[0]["site_url"])
             self.assertGreaterEqual(len(all_reports[0]["license_keys"]), 0)
             self.assertIsNotNone(all_reports[0]["product"])
@@ -91,7 +90,11 @@ def factory_org_usage_report(
 
                     # Create an event before and after this current period
                     _create_event(
-                        "new_user1", "$eventAfter", "$web", now() + relativedelta(days=2, hours=2), team=default_team,
+                        "new_user1",
+                        "$eventAfter",
+                        "$web",
+                        now() + relativedelta(days=2, hours=2),
+                        team=default_team,
                     )
                     _create_event(
                         "new_user1", "$eventBefore", "$web", now() - relativedelta(days=2, hours=2), team=default_team
@@ -103,7 +106,8 @@ def factory_org_usage_report(
                         str(default_team.organization.id), updated_org_reports
                     )
                     self.assertEqual(
-                        updated_org_report["event_count_lifetime"], org_report["event_count_lifetime"] + 2,
+                        updated_org_report["event_count_lifetime"],
+                        org_report["event_count_lifetime"] + 2,
                     )
 
                     # Check event usage in current period is unchanged

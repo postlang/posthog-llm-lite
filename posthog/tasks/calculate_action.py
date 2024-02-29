@@ -5,15 +5,12 @@ from typing import Sequence, cast
 from celery import shared_task
 
 from posthog.models import Action
-from posthog.utils import is_clickhouse_enabled
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(ignore_result=True)
 def calculate_action(action_id: int) -> None:
-    if is_clickhouse_enabled():  # In EE, actions are not precalculated
-        return
     start_time = time.time()
     action: Action = Action.objects.get(pk=action_id)
     action.calculate_events()
@@ -22,8 +19,6 @@ def calculate_action(action_id: int) -> None:
 
 
 def calculate_actions_from_last_calculation() -> None:
-    if is_clickhouse_enabled():  # In EE, actions are not precalculated
-        return
     start_time_overall = time.time()
     for action in cast(Sequence[Action], Action.objects.filter(is_calculating=False, deleted=False)):
         start_time = time.time()
