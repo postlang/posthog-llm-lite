@@ -45,7 +45,7 @@ class TestPreflight(APIBaseTest):
                     "gitlab": False,
                     "saml": False,
                 },
-                "can_create_org": False,
+                "can_create_org": True,
                 "email_service_available": False,
             },
         )
@@ -68,7 +68,7 @@ class TestPreflight(APIBaseTest):
                     "initiated": True,
                     "cloud": False,
                     "realm": "hosted",
-                    "ee_available": settings.EE_AVAILABLE,
+                    "ee_available": False,
                     "is_clickhouse_enabled": False,
                     "db_backend": "postgres",
                     "available_social_auth_providers": {
@@ -84,8 +84,11 @@ class TestPreflight(APIBaseTest):
                     "is_event_property_usage_enabled": False,
                     "licensed_users_available": None,
                     "site_url": "http://localhost:8000",
-                    "can_create_org": False,
-                    "instance_preferences": {"debug_queries": True, "disable_paid_fs": False,},
+                    "can_create_org": True,
+                    "instance_preferences": {
+                        "debug_queries": True,
+                        "disable_paid_fs": False,
+                    },
                 },
             )
             self.assertDictContainsSubset({"Europe/Moscow": 3, "UTC": 0}, available_timezones)
@@ -157,7 +160,10 @@ class TestPreflight(APIBaseTest):
                     "licensed_users_available": None,
                     "site_url": "https://app.posthog.com",
                     "can_create_org": True,
-                    "instance_preferences": {"debug_queries": False, "disable_paid_fs": False,},
+                    "instance_preferences": {
+                        "debug_queries": False,
+                        "disable_paid_fs": False,
+                    },
                 },
             )
             self.assertDictContainsSubset({"Europe/Moscow": 3, "UTC": 0}, available_timezones)
@@ -205,7 +211,10 @@ class TestPreflight(APIBaseTest):
                     "licensed_users_available": None,
                     "site_url": "http://localhost:8000",
                     "can_create_org": True,
-                    "instance_preferences": {"debug_queries": False, "disable_paid_fs": True,},
+                    "instance_preferences": {
+                        "debug_queries": False,
+                        "disable_paid_fs": True,
+                    },
                 },
             )
             self.assertDictContainsSubset({"Europe/Moscow": 3, "UTC": 0}, available_timezones)
@@ -217,7 +226,9 @@ class TestPreflight(APIBaseTest):
         from ee.models.license import License, LicenseManager
 
         super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="enterprise", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+            key="key_123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
         )
 
         self.client.logout()  # make sure it works anonymously
@@ -255,7 +266,10 @@ class TestPreflight(APIBaseTest):
         from ee.models.license import License, LicenseManager
 
         super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="free_clickhouse", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7), max_users=3,
+            key="key_123",
+            plan="free_clickhouse",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+            max_users=3,
         )
 
         OrganizationInvite.objects.create(organization=self.organization, target_email="invite@posthog.com")
@@ -286,7 +300,10 @@ class TestPreflight(APIBaseTest):
         from ee.models.license import License, LicenseManager
 
         super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="enterprise", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7), max_users=3,
+            key="key_123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+            max_users=3,
         )
         with self.settings(MULTI_ORG_ENABLED=True):
             response = self.client.get("/_preflight/")

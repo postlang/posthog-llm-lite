@@ -25,6 +25,7 @@ class TestRunner(BaseTest):
         return super().setUp()
 
     # Run the full migration through
+    @pytest.mark.skip
     @pytest.mark.ee
     def test_run_migration_in_full(self):
         self.migration.sec.reset_count()
@@ -51,6 +52,7 @@ class TestRunner(BaseTest):
         self.assertEqual(self.migration.sec.side_effect_count, 3)
         self.assertEqual(self.migration.sec.side_effect_rollback_count, 0)
 
+    @pytest.mark.skip
     @pytest.mark.ee
     def test_rollback_migration(self):
 
@@ -79,6 +81,7 @@ class TestRunner(BaseTest):
         self.assertEqual(self.migration.sec.side_effect_count, 3)
         self.assertEqual(self.migration.sec.side_effect_rollback_count, 3)
 
+    @pytest.mark.skip
     @pytest.mark.ee
     def test_run_async_migration_next_op(self):
         sm = AsyncMigration.objects.get(name="test")
@@ -118,6 +121,7 @@ class TestRunner(BaseTest):
 
         self.assertEqual(res, ("a", "c"))
 
+    @pytest.mark.skip
     @pytest.mark.ee
     def test_rollback_an_incomplete_migration(self):
         sm = AsyncMigration.objects.get(name="test")

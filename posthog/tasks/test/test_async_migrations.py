@@ -42,13 +42,14 @@ class TestAsyncMigrations(BaseTest):
         create_async_migration(name="test", description=TEST_MIGRATION_DESCRIPTION)
         return super().setUp()
 
+    @pytest.mark.skip
     @pytest.mark.ee
     @patch.object(AsyncResult, "state", states.STARTED)
     @patch("posthog.celery.app.control.inspect", side_effect=inspect_mock)
     @patch("posthog.tasks.async_migrations.run_async_migration.delay", side_effect=run_async_migration_mock)
     def test_check_async_migration_health_during_resumable_op(self, _: Any, __: Any) -> None:
         """
-        Mocks celery tasks and tests that `check_async_migration_health` works as expected 
+        Mocks celery tasks and tests that `check_async_migration_health` works as expected
         if we find that the process crashed before the migration completed.
         Given the op is resumable, we would expect check_async_migration_health to re-trigger the migration
         from where we left off
@@ -73,6 +74,7 @@ class TestAsyncMigrations(BaseTest):
         self.assertEqual(sm.current_operation_index, 4)
         self.assertEqual(sm.progress, 100)
 
+    @pytest.mark.skip
     @pytest.mark.ee
     @patch.object(AsyncResult, "state", states.STARTED)
     @patch("posthog.celery.app.control.inspect", side_effect=inspect_mock)

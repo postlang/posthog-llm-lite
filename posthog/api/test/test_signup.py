@@ -99,44 +99,30 @@ class TestSignupAPI(APIBaseTest):
         self.assertTrue(user.check_password("notsecure"))
 
     @pytest.mark.skip_on_multitenancy
-    def test_signup_disallowed_on_self_hosted_by_default(self):
+    def test_signup_allowed_on_self_hosted_by_default(self):
         with self.settings(MULTI_TENANCY=False):
             response = self.client.post(
-                "/api/signup/", {"first_name": "Jane", "email": "hedgehog2@posthog.com", "password": "notsecure"},
+                "/api/signup/",
+                {"first_name": "Jane", "email": "jane@posthog.com", "password": "notsecure"},
             )
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             response = self.client.post(
-                "/api/signup/", {"first_name": "Jane", "email": "hedgehog2@posthog.com", "password": "notsecure"},
+                "/api/signup/",
+                {"first_name": "Jane", "email": "jane2@posthog.com", "password": "notsecure"},
             )
-            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-            self.assertEqual(
-                response.json(),
-                {
-                    "attr": None,
-                    "code": "permission_denied",
-                    "detail": "New organizations cannot be created in this instance. Contact your administrator if you"
-                    " think this is a mistake.",
-                    "type": "authentication_error",
-                },
-            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    @pytest.mark.ee
     def test_signup_allowed_on_self_hosted_with_env_var(self):
-        from ee.models.license import License, LicenseManager
-
-        super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="enterprise", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7), max_users=3,
-        )
-
         Organization.objects.create(name="name")
         User.objects.create(first_name="name", email="email@posthog.com")
         count = Organization.objects.count()
         with self.settings(MULTI_TENANCY=False, MULTI_ORG_ENABLED=True):
             response = self.client.post(
-                "/api/signup/", {"first_name": "Jane", "email": "hedgehog4@posthog.com", "password": "notsecure"},
+                "/api/signup/",
+                {"first_name": "Jane", "email": "jane@posthog.com", "password": "notsecure"},
             )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.json()["email"], "hedgehog4@posthog.com")
+        self.assertEqual(response.json()["email"], "jane@posthog.com")
         self.assertEqual(Organization.objects.count(), count + 1)
 
     @pytest.mark.skip_on_multitenancy
@@ -144,7 +130,8 @@ class TestSignupAPI(APIBaseTest):
     @patch("posthoganalytics.identify")
     def test_signup_minimum_attrs(self, mock_identify, mock_capture):
         response = self.client.post(
-            "/api/signup/", {"first_name": "Jane", "email": "hedgehog2@posthog.com", "password": "notsecure"},
+            "/api/signup/",
+            {"first_name": "Jane", "email": "jane@posthog.com", "password": "notsecure"},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -157,14 +144,14 @@ class TestSignupAPI(APIBaseTest):
                 "uuid": str(user.uuid),
                 "distinct_id": user.distinct_id,
                 "first_name": "Jane",
-                "email": "hedgehog2@posthog.com",
+                "email": "jane@posthog.com",
                 "redirect_url": "/ingestion",
             },
         )
 
         # Assert that the user & org were properly created
         self.assertEqual(user.first_name, "Jane")
-        self.assertEqual(user.email, "hedgehog2@posthog.com")
+        self.assertEqual(user.email, "jane@posthog.com")
         self.assertEqual(user.email_opt_in, True)  # Defaults to True
         self.assertEqual(organization.name, "Jane")
 
@@ -185,7 +172,7 @@ class TestSignupAPI(APIBaseTest):
         # Assert that the user is logged in
         response = self.client.get("/api/users/@me/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json()["email"], "hedgehog2@posthog.com")
+        self.assertEqual(response.json()["email"], "jane@posthog.com")
 
         # Assert that the password was correctly saved
         self.assertTrue(user.check_password("notsecure"))
@@ -231,7 +218,8 @@ class TestSignupAPI(APIBaseTest):
         team_count: int = Team.objects.count()
 
         response = self.client.post(
-            "/api/signup/", {"first_name": "Jane", "email": "failed@posthog.com", "password": "123"},
+            "/api/signup/",
+            {"first_name": "Jane", "email": "failed@posthog.com", "password": "123"},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -293,14 +281,8 @@ class TestSignupAPI(APIBaseTest):
         self.assertEqual(Dashboard.objects.filter(team=user.team).count(), 3)  # Web, app & revenue demo dashboards
 
     @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.ee
     def test_api_can_use_social_login_to_create_organization_if_enabled(self, mock_request):
         Organization.objects.create(name="Test org")
-        from ee.models.license import License, LicenseManager
-
-        super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="enterprise", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7), max_users=3,
-        )
 
         response = self.client.get(reverse("social:begin", kwargs={"backend": "gitlab"}))
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
@@ -314,133 +296,6 @@ class TestSignupAPI(APIBaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
         self.assertRedirects(response, "/signup/finish/")  # page where user will create a new org
 
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.ee
-    @pytest.mark.skip_on_multitenancy
-    def test_api_cannot_use_social_login_to_create_organization_if_disabled(self, mock_request):
-        Organization.objects.create(name="Test org")
-        # Even with a valid license, because `MULTI_ORG_ENABLED` is not enabled, no new organizations will be allowed.
-        from ee.models.license import License, LicenseManager
-
-        super(LicenseManager, cast(LicenseManager, License.objects)).create(
-            key="key_123", plan="enterprise", valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7), max_users=3,
-        )
-
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "gitlab"}))
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-
-        url = reverse("social:complete", kwargs={"backend": "gitlab"})
-        url += f"?code=2&state={response.client.session['gitlab_state']}"
-        mock_request.return_value.json.return_value = MOCK_GITLAB_SSO_RESPONSE
-
-        response = self.client.get(url, follow=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(
-            response, "/login?error=no_new_organizations"
-        )  # show the user an error; operation not permitted
-
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.ee
-    def test_api_social_login_to_create_organization(self, mock_request):
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "google-oauth2"}))
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-
-        url = reverse("social:complete", kwargs={"backend": "google-oauth2"})
-        url += f"?code=2&state={response.client.session['google-oauth2_state']}"
-        mock_request.return_value.json.return_value = MOCK_GITLAB_SSO_RESPONSE
-
-        response = self.client.get(url, follow=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(response, "/signup/finish/")  # page where user will create a new org
-
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.skip_on_multitenancy
-    @pytest.mark.ee
-    def test_api_social_login_cannot_create_second_organization(self, mock_request):
-        Organization.objects.create(name="Test org")
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "google-oauth2"}))
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-
-        url = reverse("social:complete", kwargs={"backend": "google-oauth2"})
-        url += f"?code=2&state={response.client.session['google-oauth2_state']}"
-        mock_request.return_value.json.return_value = MOCK_GITLAB_SSO_RESPONSE
-
-        response = self.client.get(url, follow=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(
-            response, "/login?error=no_new_organizations"
-        )  # show the user an error; operation not permitted
-
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.skip_on_multitenancy
-    @pytest.mark.ee
-    def test_social_signup_with_whitelisted_domain(self, mock_request):
-        new_org = Organization.objects.create(name="Hogflix Movies", domain_whitelist=["hogflix.posthog.com"])
-        new_project = Team.objects.create(organization=new_org, name="My First Project")
-        user_count = User.objects.count()
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "google-oauth2"}))
-        self.assertEqual(response.status_code, 302)
-
-        url = reverse("social:complete", kwargs={"backend": "google-oauth2"})
-        url += f"?code=2&state={response.client.session['google-oauth2_state']}"
-        mock_request.return_value.json.return_value = {"access_token": "123", "email": "jane@hogflix.posthog.com"}
-
-        response = self.client.get(url, follow=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(response, "/")
-
-        self.assertEqual(User.objects.count(), user_count + 1)
-        user = cast(User, User.objects.last())
-        self.assertEqual(user.email, "jane@hogflix.posthog.com")
-        self.assertEqual(user.organization, new_org)
-        self.assertEqual(user.team, new_project)
-        self.assertEqual(user.organization_memberships.count(), 1)
-        self.assertEqual(
-            cast(OrganizationMembership, user.organization_memberships.first()).level,
-            OrganizationMembership.Level.MEMBER,
-        )
-
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.ee
-    def test_social_signup_to_existing_org_with_whitelisted_domains_is_disabled_in_cloud(self, mock_request):
-        Organization.objects.create(name="Hogflix Movies", domain_whitelist=["hogflix.posthog.com"])
-        user_count = User.objects.count()
-        org_count = Organization.objects.count()
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "google-oauth2"}))
-        self.assertEqual(response.status_code, 302)
-
-        url = reverse("social:complete", kwargs={"backend": "google-oauth2"})
-        url += f"?code=2&state={response.client.session['google-oauth2_state']}"
-        mock_request.return_value.json.return_value = {"access_token": "123", "email": "jane@hogflix.posthog.com"}
-
-        with self.settings(MULTI_TENANCY=True):
-            response = self.client.get(url, follow=True)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(response, "/signup/finish/")  # page where user will create a new org
-
-        self.assertEqual(User.objects.count(), user_count)
-        self.assertEqual(Organization.objects.count(), org_count)
-
-    @mock.patch("social_core.backends.base.BaseAuth.request")
-    @pytest.mark.skip_on_multitenancy
-    @pytest.mark.ee
-    def test_api_cannot_use_whitelist_for_different_domain(self, mock_request):
-        Organization.objects.create(name="Test org", domain_whitelist=["good.com"])
-
-        response = self.client.get(reverse("social:begin", kwargs={"backend": "google-oauth2"}))
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-
-        url = reverse("social:complete", kwargs={"backend": "google-oauth2"})
-        url += f"?code=2&state={response.client.session['google-oauth2_state']}"
-        mock_request.return_value.json.return_value = {"access_token": "123", "email": "alice@evil.com"}
-
-        response = self.client.get(url, follow=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # because `follow=True`
-        self.assertRedirects(
-            response, "/login?error=no_new_organizations"
-        )  # show the user an error; operation not permitted
-
 
 class TestInviteSignup(APIBaseTest):
     """
@@ -453,7 +308,8 @@ class TestInviteSignup(APIBaseTest):
 
     def test_api_invite_sign_up_prevalidate(self):
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+19@posthog.com", organization=self.organization,
+            target_email="test+19@posthog.com",
+            organization=self.organization,
         )
 
         response = self.client.get(f"/api/signup/{invite.id}/")
@@ -489,7 +345,8 @@ class TestInviteSignup(APIBaseTest):
         user = self._create_user("test+29@posthog.com", "test_password")
         new_org = Organization.objects.create(name="Test, Inc")
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+29@posthog.com", organization=new_org,
+            target_email="test+29@posthog.com",
+            organization=new_org,
         )
 
         self.client.force_login(user)
@@ -523,7 +380,8 @@ class TestInviteSignup(APIBaseTest):
     def test_existing_user_cant_claim_invite_if_it_doesnt_match_target_email(self):
         user = self._create_user("test+39@posthog.com", "test_password")
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+49@posthog.com", organization=self.organization,
+            target_email="test+49@posthog.com",
+            organization=self.organization,
         )
 
         self.client.force_login(user)
@@ -542,7 +400,8 @@ class TestInviteSignup(APIBaseTest):
 
     def test_api_invite_sign_up_prevalidate_expired_invite(self):
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+59@posthog.com", organization=self.organization,
+            target_email="test+59@posthog.com",
+            organization=self.organization,
         )
         invite.created_at = datetime.datetime(2020, 12, 1, tzinfo=pytz.UTC)
         invite.save()
@@ -565,11 +424,13 @@ class TestInviteSignup(APIBaseTest):
     @patch("posthog.api.organization.settings.EE_AVAILABLE", True)
     def test_api_invite_sign_up(self, mock_capture):
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+99@posthog.com", organization=self.organization,
+            target_email="test+99@posthog.com",
+            organization=self.organization,
         )
 
         response = self.client.post(
-            f"/api/signup/{invite.id}/", {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
+            f"/api/signup/{invite.id}/",
+            {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = cast(User, User.objects.order_by("-pk")[0])
@@ -621,12 +482,14 @@ class TestInviteSignup(APIBaseTest):
     @patch("posthog.api.organization.settings.EE_AVAILABLE", False)
     def test_api_invite_sign_up_member_joined_email_is_not_sent_for_initial_member(self):
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+100@posthog.com", organization=self.organization,
+            target_email="test+100@posthog.com",
+            organization=self.organization,
         )
 
         with self.settings(EMAIL_ENABLED=True, EMAIL_HOST="localhost", SITE_URL="http://test.posthog.com"):
             response = self.client.post(
-                f"/api/signup/{invite.id}/", {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
+                f"/api/signup/{invite.id}/",
+                {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
             )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -638,12 +501,14 @@ class TestInviteSignup(APIBaseTest):
         initial_user = User.objects.create_and_join(self.organization, "test+420@posthog.com", None)
 
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+100@posthog.com", organization=self.organization,
+            target_email="test+100@posthog.com",
+            organization=self.organization,
         )
 
         with self.settings(EMAIL_ENABLED=True, EMAIL_HOST="localhost", SITE_URL="http://test.posthog.com"):
             response = self.client.post(
-                f"/api/signup/{invite.id}/", {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
+                f"/api/signup/{invite.id}/",
+                {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
             )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -659,12 +524,14 @@ class TestInviteSignup(APIBaseTest):
         initial_user = User.objects.create_and_join(self.organization, "test+420@posthog.com", None)
 
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+100@posthog.com", organization=self.organization,
+            target_email="test+100@posthog.com",
+            organization=self.organization,
         )
 
         with self.settings(EMAIL_ENABLED=True, EMAIL_HOST="localhost", SITE_URL="http://test.posthog.com"):
             response = self.client.post(
-                f"/api/signup/{invite.id}/", {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
+                f"/api/signup/{invite.id}/",
+                {"first_name": "Alice", "password": "test_password", "email_opt_in": True},
             )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -673,13 +540,13 @@ class TestInviteSignup(APIBaseTest):
 
     @patch("posthoganalytics.identify")
     @patch("posthoganalytics.capture")
-    @patch("posthog.api.organization.settings.EE_AVAILABLE", False)
     def test_existing_user_can_sign_up_to_a_new_organization(self, mock_capture, mock_identify):
         user = self._create_user("test+159@posthog.com", "test_password")
         new_org = Organization.objects.create(name="TestCo")
         new_team = Team.objects.create(organization=new_org)
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+159@posthog.com", organization=new_org,
+            target_email="test+159@posthog.com",
+            organization=new_org,
         )
 
         self.client.force_login(user)
@@ -748,7 +615,8 @@ class TestInviteSignup(APIBaseTest):
 
         Team.objects.create(organization=new_org)
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+189@posthog.com", organization=new_org,
+            target_email="test+189@posthog.com",
+            organization=new_org,
         )
 
         self.client.force_login(user)
@@ -799,7 +667,8 @@ class TestInviteSignup(APIBaseTest):
         ]
 
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+799@posthog.com", organization=self.organization,
+            target_email="test+799@posthog.com",
+            organization=self.organization,
         )
 
         for attribute in required_attributes:
@@ -831,7 +700,8 @@ class TestInviteSignup(APIBaseTest):
         org_count: int = Organization.objects.count()
 
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+799@posthog.com", organization=self.organization,
+            target_email="test+799@posthog.com",
+            organization=self.organization,
         )
 
         response = self.client.post(f"/api/signup/{invite.id}/", {"first_name": "Charlie", "password": "123"})
@@ -879,7 +749,8 @@ class TestInviteSignup(APIBaseTest):
         org_count: int = Organization.objects.count()
 
         invite: OrganizationInvite = OrganizationInvite.objects.create(
-            target_email="test+799@posthog.com", organization=self.organization,
+            target_email="test+799@posthog.com",
+            organization=self.organization,
         )
         invite.created_at = datetime.datetime(2020, 3, 3, tzinfo=pytz.UTC)
         invite.save()

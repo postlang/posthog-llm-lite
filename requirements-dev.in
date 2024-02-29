@@ -32,7 +32,7 @@ types-pytz
 types-redis
 types-requests
 isort
-pytest
+pytest>=6.2.5
 pytest-django
 pytest-env
 pytest-mock

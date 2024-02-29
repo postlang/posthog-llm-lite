@@ -52,20 +52,10 @@ class TestOrganizationAPI(APIBaseTest):
 
     def test_cant_create_organization_without_valid_license_on_self_hosted(self):
         with self.settings(MULTI_TENANCY=False):
+            n_orgs = Organization.objects.count()
             response = self.client.post("/api/organizations/", {"name": "Test"})
-            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-            self.assertEqual(
-                response.json(),
-                {
-                    "attr": None,
-                    "code": "permission_denied",
-                    "detail": "You must upgrade your PostHog plan to be able to create and manage multiple organizations.",
-                    "type": "authentication_error",
-                },
-            )
-            self.assertEqual(Organization.objects.count(), 1)
-            response = self.client.post("/api/organizations/", {"name": "Test"})
-            self.assertEqual(Organization.objects.count(), 1)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(Organization.objects.count(), n_orgs + 1)
 
     # Updating organizations
 
@@ -171,7 +161,9 @@ class TestOrganizationAPI(APIBaseTest):
 
     def test_cannot_complete_onboarding_for_another_org(self):
         _, _, user = User.objects.bootstrap(
-            organization_name="Evil, Inc", email="another_one@posthog.com", password="12345678",
+            organization_name="Evil, Inc",
+            email="another_one@posthog.com",
+            password="12345678",
         )
 
         self.client.force_login(user)

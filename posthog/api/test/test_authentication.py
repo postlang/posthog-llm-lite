@@ -33,7 +33,11 @@ class TestAuthenticationAPI(APIBaseTest):
             self.user.distinct_id,
             "user logged in",
             properties={"social_provider": ""},
-            groups={"instance": ANY, "organization": str(self.team.organization_id), "project": str(self.team.uuid),},
+            groups={
+                "instance": ANY,
+                "organization": str(self.team.organization_id),
+                "project": str(self.team.uuid),
+            },
         )
 
     @patch("posthoganalytics.capture")
@@ -133,7 +137,9 @@ class TestPasswordResetAPI(APIBaseTest):
     @patch("posthoganalytics.capture")
     def test_anonymous_user_can_request_password_reset(self, mock_capture):
         with self.settings(
-            CELERY_TASK_ALWAYS_EAGER=True, EMAIL_HOST="localhost", SITE_URL="https://my.posthog.net",
+            CELERY_TASK_ALWAYS_EAGER=True,
+            EMAIL_HOST="localhost",
+            SITE_URL="https://my.posthog.net",
         ):
             response = self.client.post("/api/reset/", {"email": self.CONFIG_EMAIL})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -142,15 +148,19 @@ class TestPasswordResetAPI(APIBaseTest):
         self.assertSetEqual({",".join(outmail.to) for outmail in mail.outbox}, set([self.CONFIG_EMAIL]))
 
         self.assertEqual(
-            mail.outbox[0].subject, "Reset your PostHog password",
+            mail.outbox[0].subject,
+            "Reset your PostHog password",
         )
         self.assertEqual(
-            mail.outbox[0].body, "",
+            mail.outbox[0].body,
+            "",
         )  # no plain-text version support yet
 
         html_message = mail.outbox[0].alternatives[0][0]  # type: ignore
         self.validate_basic_html(
-            html_message, "https://my.posthog.net", preheader="Please follow the link inside to reset your password.",
+            html_message,
+            "https://my.posthog.net",
+            preheader="Please follow the link inside to reset your password.",
         )
 
         # validate reset token
@@ -179,7 +189,9 @@ class TestPasswordResetAPI(APIBaseTest):
         )
 
         with self.settings(
-            CELERY_TASK_ALWAYS_EAGER=True, EMAIL_HOST="localhost", SITE_URL="https://my.posthog.net",
+            CELERY_TASK_ALWAYS_EAGER=True,
+            EMAIL_HOST="localhost",
+            SITE_URL="https://my.posthog.net",
         ):
             response = self.client.post("/api/reset/", {"email": self.CONFIG_EMAIL})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -188,7 +200,9 @@ class TestPasswordResetAPI(APIBaseTest):
 
         html_message = mail.outbox[0].alternatives[0][0]  # type: ignore
         self.validate_basic_html(
-            html_message, "https://my.posthog.net", preheader="Please follow the link inside to reset your password.",
+            html_message,
+            "https://my.posthog.net",
+            preheader="Please follow the link inside to reset your password.",
         )
 
         # validate reset token
@@ -206,7 +220,9 @@ class TestPasswordResetAPI(APIBaseTest):
 
     def test_success_response_even_on_invalid_email(self):
         with self.settings(
-            CELERY_TASK_ALWAYS_EAGER=True, EMAIL_HOST="localhost", SITE_URL="https://my.posthog.net",
+            CELERY_TASK_ALWAYS_EAGER=True,
+            EMAIL_HOST="localhost",
+            SITE_URL="https://my.posthog.net",
         ):
             response = self.client.post("/api/reset/", {"email": "i_dont_exist@posthog.com"})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -322,12 +338,20 @@ class TestPasswordResetAPI(APIBaseTest):
             self.user.distinct_id,
             "user logged in",
             properties={"social_provider": ""},
-            groups={"instance": ANY, "organization": str(self.team.organization_id), "project": str(self.team.uuid),},
+            groups={
+                "instance": ANY,
+                "organization": str(self.team.organization_id),
+                "project": str(self.team.uuid),
+            },
         )
         mock_capture.assert_any_call(
             self.user.distinct_id,
             "user password reset",
-            groups={"instance": ANY, "organization": str(self.team.organization_id), "project": str(self.team.uuid),},
+            groups={
+                "instance": ANY,
+                "organization": str(self.team.organization_id),
+                "project": str(self.team.uuid),
+            },
         )
         self.assertEqual(mock_capture.call_count, 2)
 
@@ -359,7 +383,12 @@ class TestPasswordResetAPI(APIBaseTest):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.json(),
-            {"type": "validation_error", "code": "required", "detail": "This field is required.", "attr": "token",},
+            {
+                "type": "validation_error",
+                "code": "required",
+                "detail": "This field is required.",
+                "attr": "token",
+            },
         )
 
         # user remains logged out
