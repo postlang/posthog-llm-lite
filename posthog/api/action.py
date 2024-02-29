@@ -17,7 +17,7 @@ from rest_hooks.signals import raw_hook_event
 
 from posthog.api.routing import StructuredViewSetMixin
 from posthog.api.shared import UserBasicSerializer
-from posthog.api.utils import get_target_entity
+from posthog.api.utils import get_target_entity, set_people_events
 from posthog.auth import PersonalAPIKeyAuthentication, TemporaryTokenAuthentication
 from posthog.celery import update_cache_item_task
 from posthog.constants import INSIGHT_STICKINESS, TREND_FILTER_TYPE_ACTIONS, TREND_FILTER_TYPE_EVENTS, TRENDS_STICKINESS
@@ -42,6 +42,7 @@ from posthog.queries import base, retention, stickiness, trends
 from posthog.tasks.calculate_action import calculate_action
 from posthog.utils import generate_cache_key, get_safe_cache, should_refresh
 
+from .event import EventSerializer
 from .person import PersonSerializer, paginated_result
 
 
@@ -122,7 +123,8 @@ class ActionSerializer(serializers.HyperlinkedModelSerializer):
 
         for step in steps:
             ActionStep.objects.create(
-                action=instance, **{key: value for key, value in step.items() if key not in ("isNew", "selection")},
+                action=instance,
+                **{key: value for key, value in step.items() if key not in ("isNew", "selection")},
             )
 
         calculate_action.delay(action_id=instance.pk)
@@ -289,6 +291,10 @@ class ActionViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
         people = calculate_people(team=team, events=events, filter=filter, request=request)
         serialized_people = PersonSerializer(people, context={"request": request}, many=True).data
 
+        serialized_events = EventSerializer(events, many=True).data
+        # match serialized_events with serialized_people
+        serialized_people = set_people_events(serialized_people, serialized_events)
+
         current_url = request.get_full_path()
         next_url = paginated_result(serialized_people, request, filter.offset)
 
@@ -340,7 +346,8 @@ def _filter_cohort_breakdown(events: QuerySet, filter: Filter) -> QuerySet:
         events = events.filter(
             Exists(
                 CohortPeople.objects.filter(
-                    cohort_id=int(cast(str, filter.breakdown_value)), person_id=OuterRef("person_id"),
+                    cohort_id=int(cast(str, filter.breakdown_value)),
+                    person_id=OuterRef("person_id"),
                 ).only("id")
             )
         )
@@ -352,7 +359,10 @@ def _filter_person_prop_breakdown(events: QuerySet, filter: Filter) -> QuerySet:
         events = events.filter(
             Exists(
                 Person.objects.filter(
-                    **{"id": OuterRef("person_id"), f"properties__{filter.breakdown}": filter.breakdown_value,}
+                    **{
+                        "id": OuterRef("person_id"),
+                        f"properties__{filter.breakdown}": filter.breakdown_value,
+                    }
                 ).only("id")
             )
         )
@@ -361,7 +371,11 @@ def _filter_person_prop_breakdown(events: QuerySet, filter: Filter) -> QuerySet:
 
 def _filter_event_prop_breakdown(events: QuerySet, filter: Filter) -> QuerySet:
     if filter.breakdown_type == "event":
-        events = events.filter(**{f"properties__{filter.breakdown}": filter.breakdown_value,})
+        events = events.filter(
+            **{
+                f"properties__{filter.breakdown}": filter.breakdown_value,
+            }
+        )
     return events
 
 

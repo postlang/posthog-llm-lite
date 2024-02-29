@@ -44,7 +44,11 @@ class Stickiness(BaseQuery):
 
     def stickiness(self, entity: Entity, filter: StickinessFilter, team_id: int) -> Dict[str, Any]:
 
-        events = process_entity_for_events(entity=entity, team_id=team_id, order_by=None,)
+        events = process_entity_for_events(
+            entity=entity,
+            team_id=team_id,
+            order_by=None,
+        )
         events = events.filter(filter_events(team_id, filter, entity))
 
         events = (
@@ -55,8 +59,8 @@ class Stickiness(BaseQuery):
         )
 
         events_sql, events_sql_params = events.query.sql_with_params()
-        aggregated_query = "select count(v.person_id), v.interval_count from ({}) as v group by v.interval_count".format(
-            events_sql
+        aggregated_query = (
+            "select count(v.person_id), v.interval_count from ({}) as v group by v.interval_count".format(events_sql)
         )
         counts = execute_custom_sql(aggregated_query, events_sql_params)
         return self.process_result(counts, filter, entity)
@@ -96,7 +100,10 @@ class Stickiness(BaseQuery):
             }
             parsed_params: Dict[str, Union[Any, int, str]] = {**filter_params, **extra_params}
             persons_url.append(
-                {"filter": extra_params, "url": f"api/person/stickiness/?{urllib.parse.urlencode(parsed_params)}",}
+                {
+                    "filter": extra_params,
+                    "url": f"api/person/stickiness/?{urllib.parse.urlencode(parsed_params)}",
+                }
             )
         return persons_url
 
@@ -116,15 +123,21 @@ class Stickiness(BaseQuery):
         return results
 
     def _retrieve_people(self, target_entity: Entity, filter: StickinessFilter, team: Team, request: Request):
+        from posthog.api.event import EventSerializer
         from posthog.api.person import PersonSerializer
+        from posthog.api.utils import set_people_events
 
-        events = stickiness_process_entity_type(target_entity, team, filter)
-        events = stickiness_format_intervals(events, filter)
+        events_ts = stickiness_process_entity_type(target_entity, team, filter)
+        events = stickiness_format_intervals(events_ts, filter)
         people = stickiness_fetch_people(events, team, filter)
         people = people.prefetch_related(Prefetch("persondistinctid_set", to_attr="distinct_ids_cache"))
         people = filter_persons(team.id, request, people)
 
-        return PersonSerializer(people, many=True).data
+        serialized_people = PersonSerializer(people, many=True).data
+        serialized_events = EventSerializer(events_ts, many=True).data
+
+        serialized_people = set_people_events(serialized_people, serialized_events)
+        return serialized_people
 
 
 def stickiness_process_entity_type(target_entity: Entity, team: Team, filter: StickinessFilter) -> QuerySet:

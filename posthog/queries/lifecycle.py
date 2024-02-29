@@ -501,13 +501,21 @@ class LifecycleTrend:
             )
             pids = cursor.fetchall()
 
-            people = Person.objects.filter(team_id=team_id, id__in=[p[0] for p in pids],)
+            from posthog.api.event import EventSerializer
             from posthog.api.person import PersonSerializer
+            from posthog.api.utils import set_people_events
+
+            serialized_events = EventSerializer(filtered_events, many=True).data
+            people = Person.objects.filter(
+                team_id=team_id,
+                id__in=[p[0] for p in pids],
+            )
 
             people = filter_persons(team_id, request, people)  # type: ignore
             people = people.prefetch_related(Prefetch("persondistinctid_set", to_attr="distinct_ids_cache"))
-
-            return PersonSerializer(people, many=True).data
+            serialized_people = PersonSerializer(people, many=True).data
+            serialized_people = set_people_events(serialized_people, serialized_events)
+            return serialized_people
 
 
 def parse_response(stats: Dict, filter: Filter, additional_values: Dict = {}) -> Dict[str, Any]:
