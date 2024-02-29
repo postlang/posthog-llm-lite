@@ -1,26 +1,26 @@
 services:
     db:
-        container_name: posthog_db
+        container_name: posthog_lite_db
         environment:
-            POSTGRES_DB: posthog
+            POSTGRES_DB: posthog_lite
             POSTGRES_PASSWORD: posthog
             POSTGRES_USER: posthog
         image: postgres:13-alpine
         volumes:
             - postgres-data:/var/lib/postgresql/data
     redis:
-        container_name: posthog_redis
+        container_name: posthog_lite_redis
         image: redis:6-alpine
     web:
-        container_name: posthog_web
+        container_name: posthog_lite_web
         depends_on:
             - db
             - redis
         environment:
-            DATABASE_URL: postgres://posthog:posthog@db:5432/posthog
+            DATABASE_URL: postgres://posthog:posthog@db:5432/posthog_lite
             REDIS_URL: redis://redis:6379/
             SECRET_KEY: <randomly generated secret key>
-        image: posthog/posthog:latest
+        image: postlang/posthog-llm-lite:latest
         links:
             - db:db
             - redis:redis

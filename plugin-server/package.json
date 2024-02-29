@@ -1,7 +1,7 @@
 {
     "name": "@posthog/plugin-server",
     "version": "1.10.5",
-    "description": "Postlang Plugin Server",
+    "description": "PostHog Plugin Server",
     "types": "dist/index.d.ts",
     "main": "dist/index.js",
     "scripts": {
@@ -43,8 +43,8 @@
     "bin": {
         "posthog-plugin-server": "bin/posthog-plugin-server"
     },
-    "author": "PostHog, Postlang",
-    "repository": "https://github.com/postlang/postlang",
+    "author": "PostHog",
+    "repository": "https://github.com/postlang/posthog-llm-lite",
     "license": "MIT",
     "dependencies": {
         "@babel/core": "^7.13.1",
@@ -80,7 +80,7 @@
         "pg": "^8.6.0",
         "posthog-js-lite": "^0.0.5",
         "pretty-bytes": "^5.6.0",
-        "protobufjs": "^6.11.2",
+        "protobufjs": "^6.11.3",
         "re2": "^1.16.0",
         "redlock": "^4.2.0",
         "snowflake-sdk": "^1.6.1",

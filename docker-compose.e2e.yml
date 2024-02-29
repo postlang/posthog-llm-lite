@@ -3,16 +3,16 @@ version: '3'
 services:
     db:
         image: postgres:alpine
-        container_name: posthog_db
+        container_name: posthog_lite_db
         environment:
             POSTGRES_USER: posthog
-            POSTGRES_DB: posthog
+            POSTGRES_DB: posthog_lite
             POSTGRES_PASSWORD: posthog
     redis:
         image: 'redis:alpine'
-        container_name: posthog_redis
+        container_name: posthog_lite_redis
     web:
-        container_name: posthog_server
+        container_name: posthog_lite_server
         build:
             context: .
             dockerfile: production.Dockerfile
@@ -20,7 +20,7 @@ services:
         ports:
             - '8000:8000'
         environment:
-            DATABASE_URL: 'postgres://posthog:posthog@db:5432/posthog'
+            DATABASE_URL: 'postgres://posthog:posthog@db:5432/posthog_lite'
             REDIS_URL: 'redis://redis:6379/'
             SECRET_KEY: '<randomly generated secret key>'
             DEBUG: 1

@@ -1,73 +1,40 @@
 #
 # This Dockerfile is used for self-hosted production builds.
 #
-# Note: for 'posthog/posthog-cloud' remember to update 'prod.web.Dockerfile' as appropriate
-#
-FROM python:3.10-alpine3.14
 
-ENV PYTHONUNBUFFERED 1
+#
+# Build the frontend artifacts
+#
+FROM node:16.15-alpine3.14 AS frontend-build
 
 WORKDIR /code
 
-# Install OS dependencies needed to run PostHog
+COPY package.json yarn.lock ./
+RUN yarn config set network-timeout 300000 && \
+    yarn install --frozen-lockfile
+
+COPY frontend/ frontend/
+COPY ./bin/ ./bin/
+COPY babel.config.js tsconfig.json webpack.config.js ./
+RUN yarn build
+
 #
-# Note: please add in this section runtime dependences only.
-# If you temporary need a package to build a Python or npm
-# dependency take a look at the sections below.
+# ---------------------------------------------------------
+#
+#
+# Build the plugin-server artifacts. Note that we still need to install the
+# runtime deps in the main image
+#
+FROM node:16.15-alpine3.14 AS plugin-server-build
+
+WORKDIR /code
+
+# Install python, make and gcc as they are needed for the yarn install
 RUN apk --update --no-cache add \
-    "bash~=5.1" \
+    "make~=4.3" \
     "g++~=10.3" \
     "gcc~=10.3" \
-    "libpq~=13" \
-    "libxml2-dev~=2.9" \
-    "libxslt~=1.1" \
-    "libxslt-dev~=1.1" \
-    "make~=4.3" \
-    "nodejs~=14" \
-    "npm~=7" \
-    && npm install -g yarn@1
-
-# Install SAML dependencies
-#
-# Notes:
-#
-# - please add in this section runtime dependences only.
-#   If you temporary need a package to build a Python or npm
-#   dependency take a look at the sections below.
-#
-# - we would like to include those dependencies + 'python3-saml'
-#   directly in the requirements.txt file but due to our CI/CD
-#   setup this is currently not possible. More context at:
-#   https://github.com/PostHog/posthog/pull/5870
-#   https://github.com/PostHog/posthog/pull/6575#discussion_r733457836
-#   https://github.com/PostHog/posthog/pull/6607
-#
-RUN apk --update --no-cache add \
-    "libxml2-dev~=2.9" \
-    "xmlsec~=1.2" \
-    "xmlsec-dev~=1.2" \
-    && \
-    pip install python3-saml==1.12.0 --compile --no-cache-dir
-
-# Compile and install Python dependencies.
-#
-# Notes:
-#
-# - we explicitly COPY the files so that we don't need to rebuild
-#   the container every time a dependency changes
-#
-# - we need few additional OS packages for this. Let's install
-#   and then uninstall them when the compilation is completed.
-COPY requirements.txt ./
-RUN apk --update --no-cache --virtual .build-deps add \
-    "cargo~=1.52" \
-    "git~=2" \
-    "libffi-dev~=3.3" \
-    "postgresql-dev~=13" \
-    && \
-    pip install -r requirements.txt --compile --no-cache-dir \
-    && \
-    apk del .build-deps
+    "python3~=3.9"
 
 # Compile and install Yarn dependencies.
 #
@@ -75,56 +42,110 @@ RUN apk --update --no-cache --virtual .build-deps add \
 #
 # - we explicitly COPY the files so that we don't need to rebuild
 #   the container every time a dependency changes
-#
-# - we need few additional OS packages for this. Let's install
-#   and then uninstall them when the compilation is completed.
-COPY package.json yarn.lock ./
 COPY ./plugin-server/ ./plugin-server/
-RUN apk --update --no-cache --virtual .build-deps add \
-    "gcc~=10.3" \
-    && \
-    yarn config set network-timeout 300000 && \
-    yarn install --frozen-lockfile && \
-    yarn install --frozen-lockfile --cwd plugin-server && \
-    yarn cache clean \
-    && \
-    apk del .build-deps
-
-# Copy everything else
-COPY . .
+RUN yarn config set network-timeout 300000 && \
+    yarn install --cwd plugin-server
 
 # Build the plugin server
 #
 # Note: we run the build as a separate actions to increase
 # the cache hit ratio of the layers above.
-# symlink musl -> ld-linux is required for re2 compat on alpine
-RUN cd plugin-server \
-    && ln -s /lib/ld-musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2 \
-    && yarn build \
-    && yarn cache clean \
-    && cd ..
+RUN cd plugin-server  \
+    && yarn build
 
-# Build the frontend
 #
-# Note: we run the build as a separate actions to increase
-# the cache hit ratio of the layers above.
-RUN yarn build && \
-    yarn cache clean && \
-    rm -rf ./node_modules
+# ---------------------------------------------------------
+#
+FROM python:3.10.10-slim-bullseye AS posthog-build
+WORKDIR /code
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Generate Django's static files
+# Compile and install Python dependencies.
+# We install those dependencies on a custom folder that we will
+# then copy to the last image.
+COPY requirements.txt ./
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    "build-essential" \
+    "git" \
+    "libpq-dev" \
+    "libxmlsec1" \
+    "libxmlsec1-dev" \
+    "libffi-dev" \
+    "pkg-config" \
+    && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install -r requirements.txt --compile --no-cache-dir --target=/python-runtime
+
+ENV PATH=/python-runtime/bin:$PATH \
+    PYTHONPATH=/python-runtime
+
+# Add in Django deps and generate Django's static files.
+COPY manage.py manage.py
+COPY posthog posthog/
+COPY --from=frontend-build /code/frontend/dist /code/frontend/dist
 RUN SKIP_SERVICE_VERSION_REQUIREMENTS=1 SECRET_KEY='unsafe secret key for collectstatic only' DATABASE_URL='postgres:///' REDIS_URL='redis:///' python manage.py collectstatic --noinput
 
-# Add a dedicated 'posthog' user and group, move files into its home dir and set the
-# proper file permissions. This alleviates compliance issue for not running a
-# container as 'root'
-RUN addgroup -S posthog && \
-    adduser -S posthog -G posthog && \
-    mv /code /home/posthog && \
-    chown -R posthog:1000 /home/posthog/code
-WORKDIR /home/posthog/code
+#
+# ---------------------------------------------------------
+#
+
+FROM python:3.10.10-slim-bullseye
+WORKDIR /code
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV PYTHONUNBUFFERED 1
+
+# Install OS runtime dependencies.
+# Note: please add in this stage runtime dependences only!
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    "libpq-dev" \
+    "libxmlsec1" \
+    "libxmlsec1-dev" \
+    "libxml2"
+
+# Install NodeJS 18.
+RUN apt-get install -y --no-install-recommends \
+    "curl" \
+    && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y --no-install-recommends \
+    "nodejs" \
+    && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install and use a non-root user.
+RUN groupadd posthog && \
+    useradd -r -g posthog posthog && \
+    chown posthog:posthog /code
 USER posthog
 
-# Expose container port and run entry point script
+# Add in the compiled plugin-server & its runtime dependencies from the plugin-server-build stage.
+COPY --from=plugin-server-build --chown=posthog:posthog /code/plugin-server/dist /code/plugin-server/dist
+COPY --from=plugin-server-build --chown=posthog:posthog /code/plugin-server/node_modules /code/plugin-server/node_modules
+COPY --from=plugin-server-build --chown=posthog:posthog /code/plugin-server/package.json /code/plugin-server/package.json
+
+# Copy the Python dependencies and Django staticfiles from the posthog-build stage.
+COPY --from=posthog-build --chown=posthog:posthog /code/staticfiles /code/staticfiles
+COPY --from=posthog-build --chown=posthog:posthog /python-runtime /python-runtime
+ENV PATH=/python-runtime/bin:$PATH \
+    PYTHONPATH=/python-runtime
+
+# Copy the frontend assets from the frontend-build stage.
+# TODO: this copy should not be necessary, we should remove it once we verify everything still works.
+COPY --from=frontend-build --chown=posthog:posthog /code/frontend/dist /code/frontend/dist
+
+
+# Add in the Gunicorn config, custom bin files and Django deps.
+COPY --chown=posthog:posthog gunicorn.config.py ./
+COPY --chown=posthog:posthog ./bin ./bin/
+COPY --chown=posthog:posthog manage.py manage.py
+COPY --chown=posthog:posthog posthog posthog/
+
+# Setup ENV.
+ENV NODE_ENV=production
+
+# Expose container port and run entry point script.
 EXPOSE 8000
+
 CMD ["./bin/docker"]

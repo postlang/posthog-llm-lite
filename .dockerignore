@@ -2,6 +2,7 @@
 !bin
 !requirements.txt
 !requirements-dev.txt
+!requirements-extra.txt
 !posthog
 !plugin-server
 !staticfiles

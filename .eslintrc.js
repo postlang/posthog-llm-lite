@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* global module */
 
+
 module.exports = {
     ignorePatterns: ['node_modules', 'plugin-server'],
     env: {

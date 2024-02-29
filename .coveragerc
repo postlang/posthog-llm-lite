@@ -1,7 +1,6 @@
 [run]
 source = 
     posthog/
-    ee/
 
 branch = true
 

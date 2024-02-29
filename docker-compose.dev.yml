@@ -3,51 +3,15 @@ version: '3'
 services:
     db:
         image: postgres:12-alpine
-        container_name: posthog_db
+        container_name: posthog_lite_db
         environment:
             POSTGRES_USER: posthog
-            POSTGRES_DB: posthog
+            POSTGRES_DB: posthog_lite
             POSTGRES_PASSWORD: posthog
         ports:
             - '5432:5432'
     redis:
         image: 'redis:5-alpine'
-        container_name: posthog_redis
+        container_name: posthog_lite_redis
         ports:
             - '6379:6379'
-    backend: &backend
-        build:
-            context: .
-            dockerfile: dev.Dockerfile
-        command: ./bin/docker-backend
-        volumes:
-            - .:/code
-        environment:
-            DATABASE_URL: 'postgres://posthog:posthog@db:5432/posthog'
-            REDIS_URL: 'redis://redis:6379/'
-            SECRET_KEY: '<randomly generated secret key>'
-            DEBUG: 'true'
-            PGHOST: db
-            PGUSER: posthog
-            PGPASSWORD: posthog
-        depends_on:
-            - db
-            - redis
-        links:
-            - db:db
-            - redis:redis
-        ports:
-            - '8000:8000'
-    frontend:
-        <<: *backend
-        command: ./bin/docker-frontend
-        ports:
-            - '8234:8234'
-    worker:
-        <<: *backend
-        command: ./bin/docker-worker
-        ports: []
-        depends_on:
-            - db
-            - redis
-            - backend

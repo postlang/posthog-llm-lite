@@ -1,16 +1,16 @@
 {
-    "name": "postlang",
+    "name": "posthog-llm-lite",
     "description": "",
     "version": "0.0.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/postlang/postlang.git"
+        "url": "https://github.com/postlang/posthog-llm-lite.git"
     },
     "author": "PostHog, Postlang",
     "bugs": {
-        "url": "https://github.com/postlang/postlang/issues"
+        "url": "https://github.com/postlang/posthog-llm-lite/issues"
     },
-    "homepage": "https://github.com/postlang/postlang",
+    "homepage": "https://github.com/postlang/posthog-llm-lite",
     "license": "MIT",
     "engines": {
         "node": ">=14 <19"
