@@ -110,6 +110,45 @@ Start the backend, worker, and frontend simultaneously with:
 
 Now open [http://localhost:8000](http://localhost:8000) to see the app.
 
+## Install Plugins
+
+To maximize the capabilities of PostHog-LLM-Lite for analytics in LLMs, it's important to augment 
+LLM interactions with additional metadata. This enhancement can be done through the deployment 
+of machine learning models as PostHog plugins. Examples of such plugins, which are available 
+in their respective repositories, include:
+
+LLM conversation flow classifier: Enhances understanding of the conversation with specific agent and user flow labels.
+
+Plugin: [https://github.com/minuva/ph-flowdetect-plugin](https://github.com/minuva/ph-flowdetect-plugin)
+
+Model: [https://github.com/minuva/llm-flow-classification](https://github.com/minuva/llm-flow-classification)
+
+Emotion classifier: Identifies emotions in text, providing a deeper insight into the emotional context of interactions.
+
+Plugin: [https://github.com/minuva/ph-emotion-plugin](https://github.com/minuva/ph-emotion-plugin)
+
+Model: [https://github.com/minuva/fast-nlp-text-emotion](https://github.com/minuva/fast-nlp-text-emotion)
+
+Toxicity classifier: Detects toxic content in text, allowing for a safer and more positive user experience.
+
+Plugin: [https://github.com/minuva/ph-toxicity-plugin](https://github.com/minuva/ph-toxicity-plugin)
+
+Model: [https://github.com/minuva/fast-nlp-text-toxicity](https://github.com/minuva/fast-nlp-text-toxicity)
+
+These plugins link the PostHog data ingestion process with the machine learning models. These models need to be 
+hosted on separate servers, a setup process that is detailed within each model's repository.
+
+To install a plugin, navigate to the 'Plugins' section within the PostHog-LLM-Lite user interface, select the 'Advanced' 
+tab, and enter the GitHub repository URL of the plugin into the designated field. This action will fetch the plugin's 
+code from GitHub and initiate its installation. Subsequently, specify the address and port of your model server in 
+the 'HOSTNAME URL' field to complete the setup.
+
+PostHog's plugin system is designed to facilitate the configuration of a model pipeline, enabling sequential data 
+processing where each model can access and use properties appended by preceding models. The order of these models, 
+as displayed in the PostHog UI, is important for ensuring that each model operates on the enriched dataset provided by 
+its predecessors. PostHog-LLM-Lite adheres to a naming convention for LLM properties, and the machine learning models above 
+are triggered exclusively for LLM events that include interaction texts.
+
 ## Check PostHog
 
 Check the [PostHog repository](https://github.com/PostHog/posthog) for more details all for the list of [authors and contributors](https://github.com/PostHog/posthog#contributors-).
