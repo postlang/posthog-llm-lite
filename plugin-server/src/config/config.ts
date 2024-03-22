@@ -47,7 +47,7 @@ export function getDefaultConfig(): PluginsServerConfig {
         BASE_DIR: '.',
         PLUGINS_RELOAD_PUBSUB_CHANNEL: 'reload-plugins',
         WORKER_CONCURRENCY: coreCount,
-        TASK_TIMEOUT: 30,
+        TASK_TIMEOUT: 240,
         TASKS_PER_WORKER: 10,
         LOG_LEVEL: isTestEnv ? LogLevel.Warn : LogLevel.Info,
         SENTRY_DSN: null,
